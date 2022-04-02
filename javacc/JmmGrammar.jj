@@ -5,13 +5,58 @@ SMART_NODE_CREATION=false;
 SKIP : " " | "\t" | "\r" | "\n";
 
 TOKEN :
-	< PLUS : "+" > |
-	< MINUS : "-" > |
-	< TIMES : "*" > |
-	< DIVIDE : "/" > |
-	< OPEN_PAREN : "(" > |
-	< CLOSE_PAREN : ")" > |
-	< INTEGER : (["0" - "9"])+ >
+        < IMPORT : "import" >
+        | <CLASS: "class" >
+        | <VOID: "void" >
+        | <MAIN: "main" >
+
+        | <EXTENDS: "extends" >
+        | <PUBLIC: "public" >
+        | <STATIC: "static" >
+        | <RETURN: "return" >
+        | <THIS: "this" >
+        | <NEW: "new" >
+
+	    | <INTEGERLITERAL: (<DIGIT>)+ >
+        | <DIGIT: ["0" - "9"] >
+
+        | <INT: "int" >
+        | <BOOLEAN: "boolean" >
+        | <STRING: "String" >
+
+        | <OPENBRACKET: "{" >
+        | <CLOSEBRACKET: "}" >
+        | <OPENPAREN: "(" >
+        | <CLOSEPAREN: ")" >
+        | <OPENARRAY: "[" >
+        | <CLOSEARRAY: "]" >
+        | <SEMICOLON: ";" >
+        | <COLON: ":" >
+        | <COMMA: "," >
+        | <DOT: "." >
+        | <LENGTH: "length" >
+
+        | <TRUE: "true" >
+        | <FALSE: "false" >
+        | <AND: "&&" >
+        | <LESS: "<" >
+        | <ADD: "+" >
+        | <SUB: "-" >
+        | <MULT: "*" >
+        | <DIV: "/" >
+        | <NOT: "!" >
+        | <EQUALS: "=" >
+
+        | <IF: "if" >
+        | <ELSE: "else" >
+        | <WHILE: "while" >
+
+        | <IDENTIFIER: (<LETTER> | <DOLLAR> | <UNDERSCORE> ) (<LETTER> | <DOLLAR> | <UNDERSCORE> | <DIGIT>)* >
+        | <LETTER: (<LOWERCASE> | <UPPERCASE>) >
+        | <LOWERCASE: ["a"-"z"] >
+        | <UPPERCASE: ["A"-"Z"] >
+        | <DOLLAR: "$" >
+        | <UNDERSCORE: "_" >
 ;
 
 Start : AdditiveExpression <EOF> ;
@@ -19,7 +64,7 @@ Start : AdditiveExpression <EOF> ;
 AdditiveExpression :
 	MultiplicativeExpression
 	(
-		(< PLUS > | < MINUS >)
+		(< ADD > | < SUB >)
 		MultiplicativeExpression
 	)?
 ;
@@ -27,13 +72,13 @@ AdditiveExpression :
 MultiplicativeExpression :
 	Factor
 	(
-		(< TIMES > | < DIVIDE >)
+		(< MULT > | < DIV >)
 		Factor
 	)?
 ;
 
 Factor :
-	< INTEGER > |
-	< MINUS> Factor |
-	< OPEN_PAREN > AdditiveExpression < CLOSE_PAREN >
+	< INTEGERLITERAL > |
+	< SUB > Factor |
+	< OPENPAREN > AdditiveExpression < CLOSEPAREN >
 ;
