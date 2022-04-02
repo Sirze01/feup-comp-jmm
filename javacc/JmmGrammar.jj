@@ -166,6 +166,26 @@ Expression :
 
 ;
 
+AndExpression :
+    LessExpression (<AND> LessExpression)*
+;
+
+LessExpression :
+    AddSubExpression (<LESS> AddSubExpression)*
+;
+
+AddSubExpression :
+    MultDivExpression ((<ADD> | <SUB>) MultDivExpression)*
+;
+
+MultDivExpression :
+    NotExpression ((<MULT> | <DIV>) NotExpression)*
+;
+
+NotExpression :
+    <NOT> NotExpression
+;
+
 Start : AdditiveExpression <EOF> ;
 
 AdditiveExpression :
