@@ -59,7 +59,8 @@ TOKEN :
         | <UNDERSCORE: "_" >
 ;
 
-Program : ImportDeclaration ClassDeclaration <EOF> ;
+Program :
+    ImportDeclaration ClassDeclaration <EOF> ;
 
 ImportDeclaration :
     (<IMPORT> <IDENTIFIER>
@@ -68,13 +69,104 @@ ImportDeclaration :
 ;
 
 ClassDeclaration :
-    <CLASS> <IDENTIFIER> [ <EXTENDS> <IDENTIFIER> ]
+    <CLASS> <IDENTIFIER>
+    (
+        <EXTENDS> <IDENTIFIER>
+    )?
     <OPENBRACKET>
         (VarDeclaration)*
         (MethodDeclaration)*
     <CLOSEBRACKET>
 ;
-    
+
+VarDeclaration :
+    Type <IDENTIFIER> <SEMICOLON>
+;
+
+MethodDeclaration :
+    <PUBLIC> Type <IDENTIFIER>
+    <OPENPAREN>
+        (
+            Type <IDENTIFIER>
+            (<COMMA> Type <IDENTIFIER>)*
+        )?
+    <CLOSEPAREN>
+    <OPENBRACKET>
+        (VarDeclaration)*
+        (Statement)*
+        <RETURN> Expression <SEMICOLON>
+    <CLOSEBRACKET>
+
+    |
+
+    <PUBLIC> <STATIC> <VOID> <MAIN>
+    <OPENPAREN>
+        <STRING> <OPENARRAY> <CLOSEARRAY>
+        <IDENTIFIER>
+    <CLOSEPAREN>
+    <OPENBRACKET>
+        (VarDeclaration)*
+        (Statement)*
+    <CLOSEBRACKET>
+;
+
+Type :
+    <INT> <OPENARRAY> <CLOSEARRAY>
+    | <BOOLEAN>
+    | <INT>
+    | <STRING>
+    | <IDENTIFIER>
+;
+
+Statement :
+    <OPENBRACKET> Statement <CLOSEBRACKET>
+
+    | <IF> <OPENPAREN> Expression <CLOSEPAREN> Statement <ELSE> Statement
+
+    | <WHILE> <OPENPAREN> Expression <CLOSEPAREN> Statement
+
+    | Expression <SEMICOLON>
+
+    | <IDENTIFIER> <EQUALS> Expression <SEMICOLON>
+
+    | <IDENTIFIER> <OPENARRAY> Expression <CLOSEARRAY> <EQUALS> Expression <SEMICOLON>
+;
+
+Expression :
+    Expression (<AND> | <LESS> | <ADD> | <SUB> | <MULT> | <DIV>) Expression
+
+    | Expression <OPENARRAY> Expression <CLOSEARRAY>
+
+    | Expression <DOT> <LENGTH>
+
+    | Expression <DOT> <IDENTIFIER>
+      <OPENPAREN>
+        (
+            Expression (<COMMA> Expression)*
+        )?
+      <CLOSEPAREN>
+
+    | <INTEGERLITERAL>
+
+    | <TRUE>
+
+    | <FALSE>
+
+    | <IDENTIFIER>
+
+    | <THIS>
+
+    | <NEW> <INT> <OPENARRAY> Expression <CLOSEARRAY>
+
+    | <NEW> <IDENTIFIER> <OPENPAREN> <CLOSEPAREN>
+
+    | <NOT> Expression
+
+    | <OPENPAREN> Expression <CLOSEPAREN>
+
+;
+
+Start : AdditiveExpression <EOF> ;
 
 AdditiveExpression :
 	MultiplicativeExpression
