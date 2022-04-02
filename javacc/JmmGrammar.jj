@@ -59,7 +59,22 @@ TOKEN :
         | <UNDERSCORE: "_" >
 ;
 
-Start : AdditiveExpression <EOF> ;
+Program : ImportDeclaration ClassDeclaration <EOF> ;
+
+ImportDeclaration :
+    (<IMPORT> <IDENTIFIER>
+        ( <DOT> < IDENTIFIER> )*
+    <SEMICOLON>)*
+;
+
+ClassDeclaration :
+    <CLASS> <IDENTIFIER> [ <EXTENDS> <IDENTIFIER> ]
+    <OPENBRACKET>
+        (VarDeclaration)*
+        (MethodDeclaration)*
+    <CLOSEBRACKET>
+;
+    
 
 AdditiveExpression :
 	MultiplicativeExpression
