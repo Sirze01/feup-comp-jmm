@@ -82,10 +82,10 @@ VarDeclaration :
 ;
 
 MethodDeclaration :
-    <PUBLIC> (GenericMethod | MainMethod)
+    <PUBLIC> (InstanceMethod | MainMethod)
 ;
 
-GenericMethod :
+InstanceMethod :
     MethodHeader
     <OPENPAREN> MethodArguments <CLOSEPAREN>
     <OPENBRACKET> MethodBody ReturnExpression <CLOSEBRACKET>
