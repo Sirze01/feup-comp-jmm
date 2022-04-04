@@ -1,6 +1,7 @@
 PARSER_PACKAGE=pt.up.fe.comp;
 PARSER_CLASS=JmmGrammarParser;
 SMART_NODE_CREATION=false;
+TOKENS_ARE_NODES=false;
 
 SKIP : " " | "\t" | "\r" | "\n";
 
@@ -121,9 +122,8 @@ ReturnExpression :
 ;
 
 Type :
-    <INT> <OPENARRAY> <CLOSEARRAY>
+    <INT> (<OPENARRAY> <CLOSEARRAY>)?
     | <BOOLEAN>
-    | <INT>
     | <STRING>
     | <IDENTIFIER>
 ;
@@ -134,7 +134,7 @@ Statement :
     BracketStatement
     | IfStatement
     | WhileStatement
-    | (SCAN 2 (<IDENTIFIER> (AssignmentExpression | ArrayAssignmentExpression)) | Expression <SEMICOLON>)
+    | (SCAN 2 AssignmentExpression | Expression <SEMICOLON>)
 ;
 
 BracketStatement :
@@ -150,11 +150,15 @@ WhileStatement :
 ;
 
 AssignmentExpression :
-     <EQUALS> Expression <SEMICOLON>
+    <IDENTIFIER> (IdAssignmentExpression | ArrayAssignmentExpression) <SEMICOLON>
+;
+
+IdAssignmentExpression :
+     <EQUALS> Expression
 ;
 
 ArrayAssignmentExpression :
-    ArrayExpression <EQUALS> Expression <SEMICOLON>
+    ArrayExpression <EQUALS> Expression
 ;
 
 // Expressions
@@ -184,7 +188,7 @@ NotExpression :
 ;
 
 RecursiveArrayExpression :
-    (SCAN 2 FinalTerms | ArrayExpression | DotExpression)*
+    FinalTerms (ArrayExpression | DotExpression)*
 ;
 
 ArrayExpression :
