@@ -60,12 +60,12 @@ TOKEN :
 ;
 
 Program :
-    ImportDeclaration ClassDeclaration <EOF> ;
+    (ImportDeclaration)* ClassDeclaration <EOF> ;
 
 // Declarations
 
 ImportDeclaration :
-    (<IMPORT> <IDENTIFIER> (<DOT> < IDENTIFIER>)* <SEMICOLON>)*
+    <IMPORT> <IDENTIFIER> (<DOT> < IDENTIFIER>)* <SEMICOLON>
 ;
 
 ClassDeclaration :
@@ -81,7 +81,7 @@ VarDeclaration :
 ;
 
 MethodDeclaration :
-    GenericMethod | MainMethod
+    <PUBLIC> (GenericMethod | MainMethod)
 ;
 
 GenericMethod :
@@ -97,11 +97,11 @@ MainMethod:
 ;
 
 MethodHeader :
-     <PUBLIC> Type <IDENTIFIER>
+     Type <IDENTIFIER>
 ;
 
 MethodHeaderMain :
-    <PUBLIC> <STATIC> <VOID> <MAIN>
+    <STATIC> <VOID> <MAIN>
 ;
 
 MethodArguments :
@@ -113,7 +113,7 @@ MethodArgumentsMain :
 ;
 
 MethodBody :
-    (VarDeclaration)* (Statement)*
+    (SCAN 2 VarDeclaration)* (Statement)*
 ;
 
 ReturnExpression :
@@ -134,9 +134,7 @@ Statement :
     BracketStatement
     | IfStatement
     | WhileStatement
-    | AssignmentExpression
-    | ArrayAssignmentExpression
-    | Expression <SEMICOLON>
+    | (SCAN 2 (<IDENTIFIER> (AssignmentExpression | ArrayAssignmentExpression)) | Expression <SEMICOLON>)
 ;
 
 BracketStatement :
@@ -152,11 +150,11 @@ WhileStatement :
 ;
 
 AssignmentExpression :
-     <IDENTIFIER> <EQUALS> Expression <SEMICOLON>
+     <EQUALS> Expression <SEMICOLON>
 ;
 
 ArrayAssignmentExpression :
-    <IDENTIFIER> ArrayExpression <EQUALS> Expression <SEMICOLON>
+    ArrayExpression <EQUALS> Expression <SEMICOLON>
 ;
 
 // Expressions
@@ -186,7 +184,7 @@ NotExpression :
 ;
 
 RecursiveArrayExpression :
-    FinalTerms | (ArrayExpression | DotExpression)*
+    (SCAN 2 FinalTerms | ArrayExpression | DotExpression)*
 ;
 
 ArrayExpression :
@@ -212,8 +210,7 @@ FinalTerms :
 ;
 
 NewExpression :
-    <NEW> <INT> ArrayExpression
-    | <NEW> <IDENTIFIER> <OPENPAREN> <CLOSEPAREN>
+    <NEW> (<INT> ArrayExpression | <IDENTIFIER> <OPENPAREN> <CLOSEPAREN>)
 ;
 
 ParenthesisExpression :

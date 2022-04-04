@@ -42,10 +42,9 @@ public class SimpleParser implements JmmParser {
             Node root = (Node) SpecsSystem.invoke(parser, startingRule);
 
             if (root == null){
-                throw new ParseException(parser, "Parsing error, root is null");
+                root = parser.rootNode();
             }
 
-            root = parser.rootNode();
             root.dump("");
 
             if (!(root instanceof JmmNode)) {
