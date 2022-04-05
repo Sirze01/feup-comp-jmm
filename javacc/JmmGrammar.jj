@@ -170,27 +170,30 @@ Expression :
     AndExpression
 ;
 
-AndExpression :
-    LessExpression (<AND> LessExpression)*
+AndExpression #void:
+    LessExpression ((<AND> LessExpression) ({jjtThis.put("op", "And"); }) #BinOp(2))*
 ;
 
-LessExpression :
-    AddSubExpression (<LESS> AddSubExpression)*
+LessExpression #void:
+    AddSubExpression ((<LESS> AddSubExpression) ({jjtThis.put("op", "Less"); }) #BinOp(2))*
 ;
 
-AddSubExpression :
-    MultDivExpression ((<ADD> MultDivExpression | <SUB> MultDivExpression))*
+AddSubExpression #void:
+    MultDivExpression ((<ADD> MultDivExpression) ({jjtThis.put("op", "Add"); }) #BinOp(2)
+    | (<SUB> MultDivExpression) ({jjtThis.put("op", "Sub"); }) #BinOp(2))*
 ;
 
-MultDivExpression :
-    NotExpression ((<MULT> NotExpression | <DIV> NotExpression))*
+MultDivExpression #void:
+    NotExpression ((<MULT> NotExpression) ({jjtThis.put("op", "Mult"); }) #BinOp(2)
+     | (<DIV> NotExpression) ({jjtThis.put("op", "Div"); }) #BinOp(2))*
 ;
 
-NotExpression :
-    <NOT> NotExpression | RecursiveArrayExpression
+NotExpression #void:
+    (<NOT> NotExpression) #UnaryOp(1)
+    | RecursiveArrayExpression
 ;
 
-RecursiveArrayExpression :
+RecursiveArrayExpression #void:
     FinalTerms (ArrayExpression | DotExpression)*
 ;
 
@@ -206,23 +209,51 @@ CallExpression :
     <IDENTIFIER> <OPENPAREN> (Expression (<COMMA> Expression)*)? <CLOSEPAREN>
 ;
 
-FinalTerms :
-    <INTEGERLITERAL>
-    | <TRUE>
-    | <FALSE>
-    | <IDENTIFIER>
-    | <THIS>
+FinalTerms #void:
+    <INTEGERLITERAL> ({jjtThis.put("value", lastConsumedToken.getImage()); }{jjtThis.put("type", "Int"); }) #Literal
+    | <TRUE> ({jjtThis.put("value", lastConsumedToken.getImage()); }{jjtThis.put("type", "Boolean"); }) #Literal
+    | <FALSE> ({jjtThis.put("value", lastConsumedToken.getImage()); }{jjtThis.put("type", "Boolean"); }) #Literal
+    | <IDENTIFIER> ({jjtThis.put("name", lastConsumedToken.getImage()); }) #ID
+    | <THIS> ({jjtThis.put("value", lastConsumedToken.getImage()); }{jjtThis.put("type", "Object"); }) #Literal
     | NewExpression
     | ParenthesisExpression
 ;
 
-NewExpression :
+NewExpression #void:
     <NEW> (<INT> ArrayExpression | <IDENTIFIER> <OPENPAREN> <CLOSEPAREN>)
 ;
 
 ParenthesisExpression :
     <OPENPAREN> Expression <CLOSEPAREN>
 ;
+
+// Injections for the implementation of JmmNode
+// Since this is injected into BaseNode, it affects only non-terminals
+INJECT BaseNode :
+        import pt.up.fe.comp.jmm.ast.JmmNode;
+        import pt.up.fe.comp.jmm.ast.AJmmNode;
+        import pt.up.fe.specs.util.SpecsCollections;
+        extends AJmmNode
+{
+    @Override
+    public List<JmmNode> getChildren() {
+
+        return SpecsCollections.cast(children(), JmmNode.class);
+    }
+
+    @Override
+    public void add(JmmNode child, int index) {
+
+        if (child instanceof Node) {
+
+            addChild(index, (Node) child);
+        } else {
+
+            throw new RuntimeException("Node " + child + " is not a Node.");
+        }
+
+    }
+}
 
 // Injections for the implementation of JmmNode
 // Since this is injected into BaseNode, it affects only non-terminals
