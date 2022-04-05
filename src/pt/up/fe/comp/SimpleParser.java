@@ -39,10 +39,11 @@ public class SimpleParser implements JmmParser {
         try {
 
             JmmGrammarParser parser = new JmmGrammarParser(SpecsIo.toInputStream(jmmCode));
-            Node root = (Node) SpecsSystem.invoke(parser, startingRule);
 
-            if (root == null){
-                root = parser.rootNode();
+            SpecsSystem.invoke(parser, startingRule);
+            var root = parser.rootNode();
+            if (root == null) {
+                throw new ParseException(parser, "Parsing problems, root is null");
             }
 
             root.dump("");
