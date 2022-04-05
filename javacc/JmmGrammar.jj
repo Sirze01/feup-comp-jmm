@@ -194,19 +194,21 @@ NotExpression #void:
 ;
 
 RecursiveArrayExpression #void:
-    FinalTerms (ArrayExpression #ArrayExpression(2) | DotExpression)*
+    FinalTerms (ArrayExpression #ArrayExpression(2) | AccessExpression )*
 ;
 
 ArrayExpression #void:
     <OPENARRAY> Expression <CLOSEARRAY>
 ;
 
-DotExpression :
-    <DOT> ((<LENGTH>) | CallExpression)
+AccessExpression #void:
+    <DOT> ( (<LENGTH> ({jjtThis.put("type", "Length"); }) #AccessExpression(1))
+    | ((CallExpression) ({jjtThis.put("type", "Call"); }) #AccessExpression(2)) )
 ;
 
 CallExpression :
-    <IDENTIFIER> <OPENPAREN> (Expression (<COMMA> Expression)*)? <CLOSEPAREN>
+    (<IDENTIFIER> ({jjtThis.put("name", lastConsumedToken.getImage()); }) #ID)
+    <OPENPAREN> ((Expression (<COMMA> Expression)*)? #MemberArgs) <CLOSEPAREN>
 ;
 
 FinalTerms #void:
