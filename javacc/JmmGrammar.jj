@@ -166,7 +166,7 @@ ArrayAssignmentExpression :
 
 // Expressions
 
-Expression :
+Expression #void:
     AndExpression
 ;
 
@@ -189,20 +189,20 @@ MultDivExpression #void:
 ;
 
 NotExpression #void:
-    (<NOT> NotExpression) #UnaryOp(1)
+    (<NOT> NotExpression) ({jjtThis.put("op", "Not"); }) #UnaryOp(1)
     | RecursiveArrayExpression
 ;
 
 RecursiveArrayExpression #void:
-    FinalTerms (ArrayExpression | DotExpression)*
+    FinalTerms (ArrayExpression #ArrayExpression(2) | DotExpression)*
 ;
 
-ArrayExpression :
+ArrayExpression #void:
     <OPENARRAY> Expression <CLOSEARRAY>
 ;
 
 DotExpression :
-    <DOT> (<LENGTH> | CallExpression)
+    <DOT> ((<LENGTH>) | CallExpression)
 ;
 
 CallExpression :
@@ -220,7 +220,11 @@ FinalTerms #void:
 ;
 
 NewExpression #void:
-    <NEW> (<INT> ArrayExpression | <IDENTIFIER> <OPENPAREN> <CLOSEPAREN>)
+    <NEW> (
+    ( (<INT> ArrayExpression #ArrayExpression ) ({jjtThis.put("type", "IntArray");})) #New
+    | ( ( (<IDENTIFIER> ({jjtThis.put("value", lastConsumedToken.getImage()); }) #ID) <OPENPAREN> <CLOSEPAREN>)
+            ({jjtThis.put("type", "Class");})) #New
+    )
 ;
 
 ParenthesisExpression :
