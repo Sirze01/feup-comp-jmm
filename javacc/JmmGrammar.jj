@@ -69,11 +69,13 @@ Program :
 // Declarations
 
 ImportDeclaration :
-    <IMPORT> <IDENTIFIER> (<DOT> < IDENTIFIER>)* <SEMICOLON>
+    <IMPORT> (<IDENTIFIER> ({jjtThis.put("name", lastConsumedToken.getImage()); }) #ID)
+    (<DOT> (<IDENTIFIER> ({jjtThis.put("name", lastConsumedToken.getImage()); }) #ID))* <SEMICOLON>
 ;
 
 ClassDeclaration :
-    <CLASS> <IDENTIFIER> (<EXTENDS> <IDENTIFIER> )?
+    <CLASS> (<IDENTIFIER> ({jjtThis.put("name", lastConsumedToken.getImage()); }) #ID)
+    (<EXTENDS> (<IDENTIFIER> ({jjtThis.put("name", lastConsumedToken.getImage()); }) #ID) #InheritanceDeclaration)?
     <OPENBRACKET>
         (VarDeclaration)*
         (MethodDeclaration)*
@@ -81,7 +83,7 @@ ClassDeclaration :
 ;
 
 VarDeclaration :
-    Type <IDENTIFIER> <SEMICOLON>
+    Type <IDENTIFIER> ({jjtThis.put("name", lastConsumedToken.getImage()); }) #ID<SEMICOLON>
 ;
 
 MethodDeclaration :
@@ -89,31 +91,32 @@ MethodDeclaration :
 ;
 
 InstanceMethod :
-    MethodHeader
-    <OPENPAREN> MethodArguments <CLOSEPAREN>
+    InstanceMethodHeader
+    <OPENPAREN> InstanceMethodArguments <CLOSEPAREN>
     <OPENBRACKET> MethodBody ReturnExpression <CLOSEBRACKET>
 ;
 
 MainMethod:
-    MethodHeaderMain
-    <OPENPAREN> MethodArgumentsMain <CLOSEPAREN>
+    MainMethodHeader
+    <OPENPAREN> MainMethodArguments <CLOSEPAREN>
     <OPENBRACKET> MethodBody <CLOSEBRACKET>
 ;
 
-MethodHeader :
-     Type <IDENTIFIER>
+InstanceMethodHeader :
+     Type <IDENTIFIER> ({jjtThis.put("name", lastConsumedToken.getImage()); }) #ID
 ;
 
-MethodHeaderMain :
+MainMethodHeader :
     <STATIC> <VOID> <MAIN>
 ;
 
-MethodArguments :
-    (Type <IDENTIFIER> (<COMMA> Type <IDENTIFIER>)*)?
+InstanceMethodArguments :
+    ((Type <IDENTIFIER> ({jjtThis.put("name", lastConsumedToken.getImage()); }) #ID)
+    (<COMMA> Type <IDENTIFIER>({jjtThis.put("name", lastConsumedToken.getImage()); }) #ID)* )?
 ;
 
-MethodArgumentsMain :
-    <STRING> <OPENARRAY> <CLOSEARRAY> <IDENTIFIER>
+MainMethodArguments :
+    <STRING> <OPENARRAY> <CLOSEARRAY> <IDENTIFIER> ({jjtThis.put("name", lastConsumedToken.getImage()); })
 ;
 
 MethodBody :
@@ -125,43 +128,44 @@ ReturnExpression :
 ;
 
 Type :
-    <INT> (<OPENARRAY> <CLOSEARRAY>)?
-    | <BOOLEAN>
-    | <STRING>
-    | <IDENTIFIER>
+    <INT> ({jjtThis.put("type", "Int" );}) (<OPENARRAY> <CLOSEARRAY> ({jjtThis.put("type", "IntArray"); }))?
+    | <BOOLEAN> ({jjtThis.put("type", "Boolean"); })
+    | <STRING> ({jjtThis.put("type", "String"); })
+    | <IDENTIFIER> ({jjtThis.put("type", lastConsumedToken.getImage()); })
 ;
 
 // Statements
 
-Statement :
-    BracketStatement
+Statement #void:
+    ScopeStatement
     | IfStatement
     | WhileStatement
     | (SCAN 2 AssignmentExpression | Expression <SEMICOLON>)
 ;
 
-BracketStatement :
+ScopeStatement :
     <OPENBRACKET> (Statement)* <CLOSEBRACKET>
 ;
 
 IfStatement :
-    <IF> ParenthesisExpression Statement <ELSE> Statement
+    <IF> ParenthesisExpression #IfCondition Statement #IfBody <ELSE> Statement #Else
 ;
 
-WhileStatement :
-    <WHILE> ParenthesisExpression Statement
+WhileStatement:
+    <WHILE> ParenthesisExpression #WhileCondition Statement #WhileBody
 ;
 
-AssignmentExpression :
-    <IDENTIFIER> (IdAssignmentExpression | ArrayAssignmentExpression) <SEMICOLON>
+AssignmentExpression #void:
+    (<IDENTIFIER> ({jjtThis.put("name", lastConsumedToken.getImage()); }) #ID)
+    (IdAssignmentExpression | ArrayAssignmentExpression) <SEMICOLON>
 ;
 
-IdAssignmentExpression :
-     <EQUALS> Expression
+IdAssignmentExpression #void:
+     <EQUALS> Expression #Assignment(2)
 ;
 
-ArrayAssignmentExpression :
-    ArrayExpression <EQUALS> Expression
+ArrayAssignmentExpression #void:
+    (ArrayExpression #ArrayExpression(2)) <EQUALS> Expression #ArrayAssignment(2)
 ;
 
 // Expressions
