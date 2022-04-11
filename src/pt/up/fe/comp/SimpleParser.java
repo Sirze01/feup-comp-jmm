@@ -41,12 +41,13 @@ public class SimpleParser implements JmmParser {
             JmmGrammarParser parser = new JmmGrammarParser(SpecsIo.toInputStream(jmmCode));
 
             SpecsSystem.invoke(parser, startingRule);
-            var root = parser.rootNode();
+            var root = (parser.rootNode());
             if (root == null) {
                 throw new ParseException(parser, "Parsing problems, root is null");
             }
 
-            root.dump("");
+
+            System.out.println(((JmmNode) root).sanitize().toTree());
 
             if (!(root instanceof JmmNode)) {
                 return JmmParserResult.newError(new Report(ReportType.WARNING, Stage.SYNTATIC, -1,
@@ -55,7 +56,20 @@ public class SimpleParser implements JmmParser {
 
             return new JmmParserResult((JmmNode) root, Collections.emptyList(), config);
 
-        } catch (Exception e) {
+        } catch (ParseException e){
+            var exception = TestUtils.getException(e, ParseException.class);
+
+            // Missing: what to do when 'e' is null
+
+            Token token = exception.getToken();
+            int line = token.getBeginLine();
+            int column = token.getBeginColumn();
+            String message = exception.getMessage();
+
+            return JmmParserResult.newError(Report.newError(Stage.SYNTATIC, line, column, message, exception));
+
+        }
+        catch (Exception e) {
             return JmmParserResult.newError(Report.newError(Stage.SYNTATIC, -1, -1, "Exception during parsing", e));
         }
     }

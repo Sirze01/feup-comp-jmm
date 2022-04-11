@@ -161,7 +161,7 @@ AssignmentExpression #void:
 ;
 
 IdAssignmentExpression #void:
-     <EQUALS> Expression #Assignment(2)
+     <EQUALS> Expression #IDAssignment(2)
 ;
 
 ArrayAssignmentExpression #void:
