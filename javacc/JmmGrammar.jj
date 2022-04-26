@@ -148,7 +148,7 @@ ScopeStatement :
 ;
 
 IfStatement :
-    <IF> ParenthesisExpression #IfCondition Statement #IfBody <ELSE> Statement #Else
+    <IF> ParenthesisExpression #IfCondition Statement #IfBody <ELSE> Statement #_Else
 ;
 
 WhileStatement:
@@ -227,9 +227,9 @@ FinalTerms #void:
 
 NewExpression #void:
     <NEW> (
-    ( (<INT> ArrayExpression #ArrayExpression ) ({jjtThis.put("type", "IntArray");})) #New
+    ( (<INT> ArrayExpression #ArrayExpression ) ({jjtThis.put("type", "IntArray");})) #_New
     | ( ( (<IDENTIFIER> ({jjtThis.put("value", lastConsumedToken.getImage()); }) #ID) <OPENPAREN> <CLOSEPAREN>)
-            ({jjtThis.put("type", "Class");})) #New
+            ({jjtThis.put("type", "Class");})) #_New
     )
 ;
 
