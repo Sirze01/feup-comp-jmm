@@ -2,6 +2,7 @@ package pt.up.fe.comp;
 
 import java.io.File;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -61,6 +62,9 @@ public class Launcher {
         JmmBackend backend = new JmmBackend();
         JasminResult backendResult = backend.toJasmin(optimizerResult);
         TestUtils.noErrors(backendResult.getReports());
+
+        /*OllirResult ollirResultTest = new OllirResult(SpecsIo.getResource("fixtures/public/ollir/Fac.ollir"), Collections.emptyMap());
+        TestUtils.backend(ollirResultTest);*/
 
     }
 }
