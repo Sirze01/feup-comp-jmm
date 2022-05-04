@@ -1,0 +1,10 @@
+import ioPlus;
+
+class HelloWorld extends HelloCanss{
+    int a;
+    int[] b;
+    String pepe;
+	public static void main(String[] args) {
+		ioPlus.printHelloWorld();
+	}
+}

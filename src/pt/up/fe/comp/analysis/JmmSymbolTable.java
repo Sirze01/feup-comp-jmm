@@ -10,10 +10,10 @@ import java.util.List;
 import java.util.Map;
 
 public class JmmSymbolTable implements SymbolTable {
-    String className;
-    String superName;
+    String className = null;
+    String superName = null;
     List<String> imports = new ArrayList<>();
-    List<Symbol> fields = new ArrayList<>();
+    Map<String, Symbol> fields = new HashMap<>();
     List<String> methods = new ArrayList<>();
     Map<String, Type> methodReturnTypes =  new HashMap<>();
     Map<String, List<Symbol>> methodParameters = new HashMap<>();
@@ -33,18 +33,12 @@ public class JmmSymbolTable implements SymbolTable {
     }
 
     public void addField(Symbol field) {
-        this.fields.add(field);
+        this.fields.put(field.getName(), field);
     }
 
-    public void addMethod(String methodSignature) {
+    public void addMethod(String methodSignature, Type methodReturnType, List<Symbol> methodParameters) {
         this.methods.add(methodSignature);
-    }
-
-    public void addMethodReturnTypes(String methodSignature, Type methodReturnType) {
         this.methodReturnTypes.put(methodSignature, methodReturnType);
-    }
-
-    public void addMethodParameters(String methodSignature, List<Symbol> methodParameters) {
         this.methodParameters.put(methodSignature, methodParameters);
     }
 
@@ -52,6 +46,9 @@ public class JmmSymbolTable implements SymbolTable {
         this.localVars.put(methodSignature, localVars);
     }
 
+    public Map<String, Symbol> getFieldsMap(){
+        return fields;
+    }
 
     @Override
     public List<String> getImports() {
@@ -70,7 +67,7 @@ public class JmmSymbolTable implements SymbolTable {
 
     @Override
     public List<Symbol> getFields() {
-        return fields;
+        return new ArrayList<>(fields.values());
     }
 
     @Override
