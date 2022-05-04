@@ -5,10 +5,9 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
-import pt.up.fe.comp.stages.JmmAnalyser;
-import pt.up.fe.comp.stages.JmmBackend;
-import pt.up.fe.comp.stages.JmmOptimizer;
+import pt.up.fe.comp.analysis.JmmAnalyser;
 import pt.up.fe.comp.jmm.analysis.JmmSemanticsResult;
+import pt.up.fe.comp.jmm.ast.JmmNode;
 import pt.up.fe.comp.jmm.jasmin.JasminResult;
 import pt.up.fe.comp.jmm.ollir.OllirResult;
 import pt.up.fe.comp.jmm.parser.JmmParserResult;
@@ -47,6 +46,7 @@ public class Launcher {
         // Check if there are parsing errors
         TestUtils.noErrors(parserResult.getReports());
 
+
         // Instantiate JmmAnalysis
         JmmAnalyser analyser = new JmmAnalyser();
         // Analysis stage
@@ -54,13 +54,13 @@ public class Launcher {
         // Check if there are parsing errors
         TestUtils.noErrors(analysisResult.getReports());
 
-        JmmOptimizer optimizer = new JmmOptimizer();
-        OllirResult optimizerResult = optimizer.toOllir(analysisResult);
-        TestUtils.noErrors(optimizerResult.getReports());
+        //JmmOptimizer optimizer = new JmmOptimizer();
+        //OllirResult optimizerResult = optimizer.toOllir(analysisResult);
+        //TestUtils.noErrors(optimizerResult.getReports());
 
-        JmmBackend backend = new JmmBackend();
-        JasminResult backendResult = backend.toJasmin(optimizerResult);
-        TestUtils.noErrors(backendResult.getReports());
+        //JmmBackend backend = new JmmBackend();
+        //JasminResult backendResult = backend.toJasmin(optimizerResult);
+        //TestUtils.noErrors(backendResult.getReports());
 
     }
 }
