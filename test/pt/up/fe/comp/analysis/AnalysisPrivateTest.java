@@ -14,7 +14,7 @@ public class AnalysisPrivateTest {
         return results;
     }
 
-    private static JmmSemanticsResult mustFail(String code){
+    private static JmmSemanticsResult mustFail(String code) {
         JmmSemanticsResult results = TestUtils.analyse(code);
         System.out.println("SymbolTable: ");
         System.out.println(results.getSymbolTable().print());
@@ -69,7 +69,6 @@ public class AnalysisPrivateTest {
     @Test
     public void testTicTacToe() {
         noErrors(SpecsIo.getResource("fixtures/public/TicTacToe.jmm"));
-
     }
 
     @Test
