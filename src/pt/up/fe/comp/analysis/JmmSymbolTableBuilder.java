@@ -70,15 +70,32 @@ public class JmmSymbolTableBuilder extends PreorderJmmVisitor<JmmSymbolTable, Bo
         return true;
     }
 
+    private void addLocalVars(JmmNode methodBody, JmmSymbolTable symbolTable, JmmMethod method) {
+        for (JmmNode child : methodBody.getChildren()) {
+            if (Objects.equals(child.getKind(), "VarDeclaration")) {
+                Symbol s = new Symbol(AstUtils.getNodeType(child.getJmmChild(0)), child.getJmmChild(1).get("name"));
+                Symbol se = method.addVar(s);
+
+                if (se != null) {
+                    reports.add(new Report(ReportType.ERROR, Stage.SEMANTIC, Integer.parseInt(child.get("line")), Integer.parseInt(child.get("column")), "Variable already defined in this scope. Last definition: " + se));
+                }
+            }
+        }
+    }
+
     private Boolean mainMethodVisit(JmmNode methodNode, JmmSymbolTable symbolTable) {
         String parameterName = methodNode.getJmmChild(1).get("name");
 
-        JmmMethod e = symbolTable.addMethod("main", new Type("void", false), List.of(new Symbol(new Type("String", true), parameterName)));
+        JmmMethod method = new JmmMethod("main", new Type("void", false), List.of(new Symbol(new Type("String", true), parameterName)));
+        JmmMethod e = symbolTable.addMethod(method);
         if (e != null) {
             reports.add(new Report(ReportType.ERROR, Stage.SEMANTIC, Integer.parseInt(methodNode.get("line")), Integer.parseInt(methodNode.get("column")), "Main method already defined. Last definition: " + e));
+            return false;
         }
 
-        
+        JmmNode methodBody = methodNode.getJmmChild(2);
+        addLocalVars(methodBody, symbolTable, method);
+
         return true;
     }
 
@@ -94,10 +111,15 @@ public class JmmSymbolTableBuilder extends PreorderJmmVisitor<JmmSymbolTable, Bo
             parameters.add(new Symbol(AstUtils.getNodeType(methodArgsNode.getJmmChild(param)), methodArgsNode.getJmmChild(param + 1).get("name")));
         }
 
-        JmmMethod e = symbolTable.addMethod(methodName, methodType, parameters);
+        JmmMethod method = new JmmMethod(methodName, methodType, parameters);
+        JmmMethod e = symbolTable.addMethod(method);
         if (e != null) {
             reports.add(new Report(ReportType.ERROR, Stage.SEMANTIC, Integer.parseInt(methodNode.get("line")), Integer.parseInt(methodNode.get("column")), "Method already defined. Last definition: " + e));
         }
+
+        JmmNode methodBody = methodNode.getJmmChild(2);
+        addLocalVars(methodBody, symbolTable, method);
+
         return true;
     }
 }

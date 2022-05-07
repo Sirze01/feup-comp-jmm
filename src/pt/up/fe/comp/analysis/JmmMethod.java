@@ -4,7 +4,6 @@ import pt.up.fe.comp.jmm.analysis.table.Symbol;
 import pt.up.fe.comp.jmm.analysis.table.Type;
 
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 
@@ -29,13 +28,15 @@ public class JmmMethod {
         return parameters;
     }
 
-    public Boolean addVar(Symbol symbol) {
-        if (vars.contains(symbol)) {
-            return false;
+    public Symbol addVar(Symbol symbol) {
+        for (Symbol s : vars) {
+            if (Objects.equals(s.getName(), symbol.getName())) {
+                return s;
+            }
         }
 
         vars.add(symbol);
-        return true;
+        return null;
     }
 
     public List<Symbol> getVars() {

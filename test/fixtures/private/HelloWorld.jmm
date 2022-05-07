@@ -5,6 +5,7 @@ class HelloWorld extends HelloCanss{
     int[] b;
     String pepe;
 	public static void main(String[] args) {
+	    int a;
 		ioPlus.printHelloWorld();
 	}
 

@@ -36,13 +36,8 @@ public class JmmSymbolTable implements SymbolTable {
         this.fields.put(field.getName(), field);
     }
 
-    public JmmMethod addMethod(String methodName, Type methodReturnType, List<Symbol> methodParameters) {
-        JmmMethod method = new JmmMethod(methodName, methodReturnType, methodParameters);
+    public JmmMethod addMethod(JmmMethod method) {
         return this.methods.putIfAbsent(method.toString(), method);
-    }
-
-    public void addLocalVars(String methodSignature, Symbol localVar) {
-        this.methods.get(methodSignature).addVar(localVar);
     }
 
     public Map<String, Symbol> getFieldsMap(){
