@@ -12,11 +12,12 @@ package pt.up.fe.comp;
  * specific language governing permissions and limitations under the License. under the License.
  */
 
+import org.junit.Test;
 import pt.up.fe.specs.util.SpecsIo;
 
 public class OptimizationTest {
 
-    // @Test
+    @Test
     public void testHelloWorld() {
         var result = TestUtils.optimize(SpecsIo.getResource("fixtures/public/HelloWorld.jmm"));
         TestUtils.noErrors(result.getReports());

@@ -11,6 +11,7 @@ import pt.up.fe.comp.jmm.ast.JmmNode;
 import pt.up.fe.comp.jmm.jasmin.JasminResult;
 import pt.up.fe.comp.jmm.ollir.OllirResult;
 import pt.up.fe.comp.jmm.parser.JmmParserResult;
+import pt.up.fe.comp.optimization.JmmOptimizer;
 import pt.up.fe.specs.util.SpecsIo;
 import pt.up.fe.specs.util.SpecsLogs;
 import pt.up.fe.specs.util.SpecsSystem;
@@ -54,9 +55,13 @@ public class Launcher {
         // Check if there are analysis errors
         TestUtils.noErrors(analysisResult.getReports());
 
-        //JmmOptimizer optimizer = new JmmOptimizer();
-        //OllirResult optimizerResult = optimizer.toOllir(analysisResult);
-        //TestUtils.noErrors(optimizerResult.getReports());
+
+        // Instantiate JmmOptimizer
+        JmmOptimizer optimizer = new JmmOptimizer();
+        // Optimization stage
+        OllirResult optimizerResult = optimizer.toOllir(analysisResult);
+        // Check if there are optimization errors
+        TestUtils.noErrors(optimizerResult.getReports());
 
         //JmmBackend backend = new JmmBackend();
         //JasminResult backendResult = backend.toJasmin(optimizerResult);
