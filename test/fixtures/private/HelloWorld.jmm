@@ -7,4 +7,16 @@ class HelloWorld extends HelloCanss{
 	public static void main(String[] args) {
 		ioPlus.printHelloWorld();
 	}
+
+	public int sayHello(String args, Int nr) {
+	    int a;
+        ioPlus.printHelloWorld();
+        return 1;
+    }
+
+    public int sayHello(Int nr, String args) {
+        String b;
+        ioPlus.printHelloWorld();
+        return 1;
+    }
 }

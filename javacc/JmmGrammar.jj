@@ -86,11 +86,11 @@ VarDeclaration :
     Type <IDENTIFIER> ({jjtThis.put("name", lastConsumedToken.getImage()); }) #ID<SEMICOLON>
 ;
 
-MethodDeclaration :
+MethodDeclaration #void:
     <PUBLIC> (InstanceMethod | MainMethod)
 ;
 
-InstanceMethod :
+InstanceMethod:
     InstanceMethodHeader
     <OPENPAREN> InstanceMethodArguments <CLOSEPAREN>
     <OPENBRACKET> MethodBody ReturnExpression <CLOSEBRACKET>

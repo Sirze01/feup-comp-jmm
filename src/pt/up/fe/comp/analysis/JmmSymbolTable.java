@@ -10,14 +10,14 @@ import java.util.List;
 import java.util.Map;
 
 public class JmmSymbolTable implements SymbolTable {
+    List<String> imports = new ArrayList<>();
+
     String className = null;
     String superName = null;
-    List<String> imports = new ArrayList<>();
     Map<String, Symbol> fields = new HashMap<>();
-    List<String> methods = new ArrayList<>();
-    Map<String, Type> methodReturnTypes =  new HashMap<>();
-    Map<String, List<Symbol>> methodParameters = new HashMap<>();
-    Map<String, List<Symbol>> localVars = new HashMap<>();
+
+
+    Map<String, JmmMethod> methods = new HashMap<>();
 
 
     public void setClassName(String className) {
@@ -36,14 +36,13 @@ public class JmmSymbolTable implements SymbolTable {
         this.fields.put(field.getName(), field);
     }
 
-    public void addMethod(String methodSignature, Type methodReturnType, List<Symbol> methodParameters) {
-        this.methods.add(methodSignature);
-        this.methodReturnTypes.put(methodSignature, methodReturnType);
-        this.methodParameters.put(methodSignature, methodParameters);
+    public JmmMethod addMethod(String methodName, Type methodReturnType, List<Symbol> methodParameters) {
+        JmmMethod method = new JmmMethod(methodName, methodReturnType, methodParameters);
+        return this.methods.putIfAbsent(method.toString(), method);
     }
 
-    public void addLocalVars(String methodSignature, List<Symbol> localVars) {
-        this.localVars.put(methodSignature, localVars);
+    public void addLocalVars(String methodSignature, Symbol localVar) {
+        this.methods.get(methodSignature).addVar(localVar);
     }
 
     public Map<String, Symbol> getFieldsMap(){
@@ -72,21 +71,21 @@ public class JmmSymbolTable implements SymbolTable {
 
     @Override
     public List<String> getMethods() {
-        return methods;
+        return new ArrayList<>(methods.keySet());
     }
 
     @Override
     public Type getReturnType(String methodSignature) {
-        return methodReturnTypes.get(methodSignature);
+        return methods.get(methodSignature).getReturnType();
     }
 
     @Override
     public List<Symbol> getParameters(String methodSignature) {
-        return methodParameters.get(methodSignature);
+        return methods.get(methodSignature).getParameters();
     }
 
     @Override
     public List<Symbol> getLocalVariables(String methodSignature) {
-        return localVars.get(methodSignature);
+        return methods.get(methodSignature).getVars();
     }
 }
