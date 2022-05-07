@@ -51,7 +51,7 @@ public class Launcher {
         JmmAnalyser analyser = new JmmAnalyser();
         // Analysis stage
         JmmSemanticsResult analysisResult = analyser.semanticAnalysis(parserResult);
-        // Check if there are parsing errors
+        // Check if there are analysis errors
         TestUtils.noErrors(analysisResult.getReports());
 
         //JmmOptimizer optimizer = new JmmOptimizer();
