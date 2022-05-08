@@ -69,6 +69,16 @@ public class JmmSymbolTable implements SymbolTable {
         return new ArrayList<>(methods.keySet());
     }
 
+
+    public void printLocalVars(){
+        for (JmmMethod method : methods.values()){
+            System.out.println(method.getName());
+            for(Symbol s : method.getVars()){
+                System.out.println(s);
+            }
+        }
+    }
+
     @Override
     public Type getReturnType(String methodSignature) {
         return methods.get(methodSignature).getReturnType();
