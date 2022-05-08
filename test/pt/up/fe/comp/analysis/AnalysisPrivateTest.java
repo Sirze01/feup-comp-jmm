@@ -6,74 +6,68 @@ import pt.up.fe.comp.jmm.analysis.JmmSemanticsResult;
 import pt.up.fe.specs.util.SpecsIo;
 
 public class AnalysisPrivateTest {
-    private static JmmSemanticsResult noErrors(String code) {
+    private static JmmSemanticsResult analyseAndPrint(String code) {
         JmmSemanticsResult results = TestUtils.analyse(code);
         System.out.println("SymbolTable: ");
         System.out.println(results.getSymbolTable().print());
-        TestUtils.noErrors(results);
+
+        if (results.getSymbolTable() instanceof JmmSymbolTable) {
+            ((JmmSymbolTable) results.getSymbolTable()).printLocalVars();
+        }
+
         return results;
     }
-
-    private static JmmSemanticsResult mustFail(String code){
-        JmmSemanticsResult results = TestUtils.analyse(code);
-        System.out.println("SymbolTable: ");
-        System.out.println(results.getSymbolTable().print());
-        TestUtils.mustFail(results);
-        return results;
-    }
-
 
     @Test
     public void testChanges() {
-        JmmSemanticsResult results = noErrors(SpecsIo.getResource("fixtures/private/jmm/HelloWorld.jmm"));
+        JmmSemanticsResult results = analyseAndPrint(SpecsIo.getResource("fixtures/private/jmm/HelloWorld.jmm"));
         System.out.println(results.getRootNode().toTree());
     }
 
     @Test
     public void testFindMaximum() {
-        noErrors(SpecsIo.getResource("fixtures/public/FindMaximum.jmm"));
+        TestUtils.noErrors(analyseAndPrint(SpecsIo.getResource("fixtures/public/FindMaximum.jmm")));
 
     }
 
     @Test
     public void testHelloWorld() {
-        noErrors(SpecsIo.getResource("fixtures/public/HelloWorld.jmm"));
+        TestUtils.noErrors(analyseAndPrint(SpecsIo.getResource("fixtures/public/HelloWorld.jmm")));
     }
 
     @Test
     public void testLazysort() {
-        noErrors(SpecsIo.getResource("fixtures/public/Lazysort.jmm"));
+        TestUtils.noErrors(analyseAndPrint(SpecsIo.getResource("fixtures/public/Lazysort.jmm")));
     }
 
     @Test
     public void testLife() {
-        noErrors(SpecsIo.getResource("fixtures/public/Life.jmm"));
+        TestUtils.noErrors(analyseAndPrint(SpecsIo.getResource("fixtures/public/Life.jmm")));
 
     }
 
     @Test
     public void testMonteCarloPi() {
-        noErrors(SpecsIo.getResource("fixtures/public/MonteCarloPi.jmm"));
+        TestUtils.noErrors(analyseAndPrint(SpecsIo.getResource("fixtures/public/MonteCarloPi.jmm")));
     }
 
     @Test
     public void testQuickSort() {
-        noErrors(SpecsIo.getResource("fixtures/public/QuickSort.jmm"));
+        TestUtils.noErrors(analyseAndPrint(SpecsIo.getResource("fixtures/public/QuickSort.jmm")));
     }
 
     @Test
     public void testSimple() {
-        noErrors(SpecsIo.getResource("fixtures/public/Simple.jmm"));
+        TestUtils.noErrors(analyseAndPrint(SpecsIo.getResource("fixtures/public/Simple.jmm")));
     }
 
     @Test
     public void testTicTacToe() {
-        noErrors(SpecsIo.getResource("fixtures/public/TicTacToe.jmm"));
-
+        TestUtils.noErrors(analyseAndPrint(SpecsIo.getResource("fixtures/public/TicTacToe.jmm")));
     }
 
     @Test
     public void testWhileAndIf() {
-        noErrors(SpecsIo.getResource("fixtures/public/WhileAndIf.jmm"));
+        TestUtils.noErrors(analyseAndPrint(SpecsIo.getResource("fixtures/public/WhileAndIf.jmm")));
     }
 }

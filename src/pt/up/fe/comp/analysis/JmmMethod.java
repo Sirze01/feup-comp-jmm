@@ -20,6 +20,10 @@ public class JmmMethod {
         this.parameters = parameters;
     }
 
+    public String getName() {
+        return name;
+    }
+
     public Type getReturnType() {
         return returnType;
     }
