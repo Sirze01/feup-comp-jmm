@@ -1,4 +1,4 @@
-package pt.up.fe.comp.jasmin;
+package pt.up.fe.comp.backend;
 
 import org.specs.comp.ollir.*;
 

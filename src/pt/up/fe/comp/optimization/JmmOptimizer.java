@@ -1,4 +1,4 @@
-package pt.up.fe.comp.stages;
+package pt.up.fe.comp.optimization;
 
 import pt.up.fe.comp.jmm.analysis.JmmSemanticsResult;
 import pt.up.fe.comp.jmm.ollir.JmmOptimization;

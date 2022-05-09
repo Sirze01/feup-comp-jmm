@@ -1,4 +1,4 @@
-package pt.up.fe.comp.stages;
+package pt.up.fe.comp.analysis;
 
 import java.util.ArrayList;
 import java.util.Collections;
