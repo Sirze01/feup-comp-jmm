@@ -1,16 +1,13 @@
-package pt.up.fe.comp.stages;
+package pt.up.fe.comp.backend;
 
 import org.specs.comp.ollir.ClassUnit;
-import org.specs.comp.ollir.OllirErrorException;
-import pt.up.fe.comp.jasmin.Jasmin;
+import pt.up.fe.comp.backend.Jasmin;
 import pt.up.fe.comp.jmm.jasmin.JasminBackend;
 import pt.up.fe.comp.jmm.jasmin.JasminResult;
 import pt.up.fe.comp.jmm.ollir.OllirResult;
 import pt.up.fe.comp.jmm.report.Report;
-import pt.up.fe.comp.jmm.report.Stage;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 public class JmmBackend implements JasminBackend {

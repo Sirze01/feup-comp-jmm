@@ -2,13 +2,12 @@ package pt.up.fe.comp;
 
 import java.io.File;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
-import pt.up.fe.comp.stages.JmmAnalyser;
-import pt.up.fe.comp.stages.JmmBackend;
-import pt.up.fe.comp.stages.JmmOptimizer;
+import pt.up.fe.comp.analysis.JmmAnalyser;
+import pt.up.fe.comp.backend.JmmBackend;
+import pt.up.fe.comp.optimization.JmmOptimizer;
 import pt.up.fe.comp.jmm.analysis.JmmSemanticsResult;
 import pt.up.fe.comp.jmm.jasmin.JasminResult;
 import pt.up.fe.comp.jmm.ollir.OllirResult;
