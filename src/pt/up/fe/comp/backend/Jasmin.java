@@ -10,7 +10,7 @@ public class Jasmin {
         this.ollirClass = ollirClass;
         this.ollirClass.buildVarTables();
 
-       this.jasminCodeBuilder = new StringBuilder();
+        this.jasminCodeBuilder = new StringBuilder();
 
         buildClassDeclaration();
         buildClassMethod();

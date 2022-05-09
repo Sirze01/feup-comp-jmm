@@ -17,7 +17,7 @@ public class JmmBackend implements JasminBackend {
         //try {
 
             Jasmin jasmin = new Jasmin();
-            String jasminCode = jasmin.build(ollirClass); // Convert node ...
+            String jasminCode = jasmin.build(ollirClass);
             //System.out.println(jasminCode);
 
             // More reports from this stage
