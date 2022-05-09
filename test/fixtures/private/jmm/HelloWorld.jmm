@@ -1,11 +1,18 @@
 import ioPlus;
 
-class HelloWorld extends HelloCanss{
+class HelloWorld extends HelloClass{
     int a;
     int[] b;
-    String pepe;
+    boolean c;
+    String d;
+    Type e;
+
 	public static void main(String[] args) {
 	    int a;
+	    int[] b;
+        boolean c;
+        String d;
+        Type e;
 		ioPlus.printHelloWorld();
 	}
 

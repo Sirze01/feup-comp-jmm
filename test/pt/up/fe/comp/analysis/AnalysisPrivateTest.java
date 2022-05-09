@@ -20,7 +20,7 @@ public class AnalysisPrivateTest {
 
     @Test
     public void testChanges() {
-        JmmSemanticsResult results = analyseAndPrint(SpecsIo.getResource("fixtures/private/jmm/HelloWorld.jmm"));
+        JmmSemanticsResult results = analyseAndPrint(SpecsIo.getResource("fixtures/public/HelloWorld.jmm"));
         System.out.println(results.getRootNode().toTree());
     }
 
