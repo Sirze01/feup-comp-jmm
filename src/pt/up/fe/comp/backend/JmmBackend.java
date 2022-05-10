@@ -1,7 +1,6 @@
 package pt.up.fe.comp.backend;
 
 import org.specs.comp.ollir.ClassUnit;
-import pt.up.fe.comp.backend.Jasmin;
 import pt.up.fe.comp.jmm.jasmin.JasminBackend;
 import pt.up.fe.comp.jmm.jasmin.JasminResult;
 import pt.up.fe.comp.jmm.ollir.OllirResult;
@@ -18,7 +17,7 @@ public class JmmBackend implements JasminBackend {
 
             Jasmin jasmin = new Jasmin();
             String jasminCode = jasmin.build(ollirClass);
-            //System.out.println(jasminCode);
+            System.out.println(jasminCode);
 
             // More reports from this stage
             List<Report> reports = new ArrayList<>();

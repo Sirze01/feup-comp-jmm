@@ -62,8 +62,5 @@ public class Launcher {
         JasminResult backendResult = backend.toJasmin(optimizerResult);
         TestUtils.noErrors(backendResult.getReports());
 
-        /*OllirResult ollirResultTest = new OllirResult(SpecsIo.getResource("fixtures/public/ollir/Fac.ollir"), Collections.emptyMap());
-        TestUtils.backend(ollirResultTest);*/
-
     }
 }
