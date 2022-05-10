@@ -13,6 +13,7 @@ import pt.up.fe.comp.jmm.report.Report;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 public class OllirGenerator extends AJmmVisitor<Boolean, Boolean> {
     private final SymbolTable symbolTable;
@@ -43,6 +44,8 @@ public class OllirGenerator extends AJmmVisitor<Boolean, Boolean> {
         addVisit("ClassDeclaration", this::classDeclarationVisit);
         addVisit("MainMethod", this::mainMethodVisit);
         addVisit("InstanceMethod", this::instanceMethodVisit);
+        addVisit("ReturnExpression", this::returnExpressionVisit);
+        addVisit("Literal", this::literalVisit);
     }
 
     public String getCode() {
@@ -65,6 +68,7 @@ public class OllirGenerator extends AJmmVisitor<Boolean, Boolean> {
     }
 
     private Boolean classDeclarationVisit(JmmNode classNode, Boolean dummy) {
+        code.append("public ");
         code.append(symbolTable.getClassName());
 
         if (symbolTable.getSuper() != null) {
@@ -99,7 +103,7 @@ public class OllirGenerator extends AJmmVisitor<Boolean, Boolean> {
 
         code.append(" ".repeat(indent * getNumSpaces()));
         code.append(".method public static ");
-        methodScopeVisit(mainSignature);
+        methodScopeVisit(mainNode, mainSignature);
 
         return true;
     }
@@ -109,19 +113,43 @@ public class OllirGenerator extends AJmmVisitor<Boolean, Boolean> {
 
         code.append(" ".repeat(indent * getNumSpaces()));
         code.append(".method public ");
-        methodScopeVisit(methodSignature);
+        methodScopeVisit(methodNode, methodSignature);
 
         return true;
     }
 
-    private void methodScopeVisit(String methodSignature){
-        code.append(OllirGeneratorUtils.getCode(((JmmSymbolTable) symbolTable), methodSignature));
+    private void methodScopeVisit(JmmNode methodNode, String methodSignature) {
+        code.append(OllirGeneratorUtils.getMethodHeader(((JmmSymbolTable) symbolTable), methodSignature));
         code.append(" {\n");
         indent++;
 
+
+        if (!Objects.equals(symbolTable.getReturnType(methodSignature), new Type("void", false))) {
+            JmmNode returnNode = methodNode.getJmmChild(methodNode.getNumChildren() - 1);
+
+            code.append(" ".repeat(indent * getNumSpaces()));
+            code.append("ret.").append(OllirGeneratorUtils.toOllirType(symbolTable.getReturnType(methodSignature))).append(" ");
+
+            visit(returnNode);
+
+            code.append(";\n");
+        }
         indent--;
         code.append(" ".repeat(indent * getNumSpaces()));
         code.append("}\n");
+    }
 
+    private Boolean returnExpressionVisit (JmmNode returnNode, Boolean dummy){
+        visit(returnNode.getJmmChild(0));
+        return true;
+    }
+
+    private Boolean literalVisit (JmmNode literalNode, Boolean dummy){
+        // ToDo: Handle return this
+        if(Objects.equals(literalNode.get("value"), "this")){
+            return true;
+        }
+        code.append(OllirGeneratorUtils.getCodeLiteral(literalNode));
+        return true;
     }
 }

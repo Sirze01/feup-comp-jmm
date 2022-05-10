@@ -22,9 +22,9 @@ class HelloWorld extends HelloClass{
         return 1;
     }
 
-    public int sayHello(Int nr, String args) {
+    public HelloWorld sayHello(Int nr, String args) {
         String b;
         ioPlus.printHelloWorld();
-        return 1;
+        return this;
     }
 }

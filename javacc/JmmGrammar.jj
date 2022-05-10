@@ -220,7 +220,7 @@ FinalTerms #void:
     | <TRUE> ({jjtThis.put("value", lastConsumedToken.getImage()); }{jjtThis.put("type", "Boolean"); }) #Literal
     | <FALSE> ({jjtThis.put("value", lastConsumedToken.getImage()); }{jjtThis.put("type", "Boolean"); }) #Literal
     | <IDENTIFIER> ({jjtThis.put("name", lastConsumedToken.getImage()); }) #ID
-    | <THIS> ({jjtThis.put("value", lastConsumedToken.getImage()); }{jjtThis.put("type", "Object"); }) #Literal
+    | <THIS> ({jjtThis.put("value", "this"); }{jjtThis.put("type", "Object"); }) #Literal
     | NewExpression
     | ParenthesisExpression
 ;
