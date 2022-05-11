@@ -5,16 +5,18 @@ import pt.up.fe.specs.util.exceptions.NotImplementedException;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 public class Jasmin {
     private ClassUnit ollirClass;
     private Map<String, String> fullyQualifiedNames;
+    private HashMap<String, Descriptor> variableTable;
     private StringBuilder jasminCodeBuilder;
 
     public String build(ClassUnit ollirClass) {
         this.ollirClass = ollirClass;
-        //this.ollirClass.buildVarTables();
+        this.ollirClass.buildVarTables();
 
         this.jasminCodeBuilder = new StringBuilder();
         setImportNames();
@@ -93,7 +95,10 @@ public class Jasmin {
                 return "[" + buildTypes(((ArrayType) type).getTypeOfElements());
             case OBJECTREF: case CLASS:
                 String className = ((ClassType) type).getName();
-                return "L" + this.fullyQualifiedNames.get(className) + ";";
+                String fullyQualifiedClassName = this.fullyQualifiedNames.get(className);
+                String finalClassName = fullyQualifiedClassName != null
+                        ? this.fullyQualifiedNames.get(className) : className;
+                return "L" + finalClassName + ";";
             default:
                 return buildTypes(type.getTypeOfElement());
         }
@@ -120,6 +125,7 @@ public class Jasmin {
     }
 
     private void buildClassMethod(Method method) {
+        this.variableTable = method.getVarTable();
         // Method Signature Definition
         this.jasminCodeBuilder.append(".method ")
                               .append(accessScope(method.getMethodAccessModifier()))
@@ -137,14 +143,15 @@ public class Jasmin {
                               .append("\n");
 
         // Limit Declarations
-        this.jasminCodeBuilder.append(".limit stack 99\n");
-        this.jasminCodeBuilder.append(".limit locals 99\n");
+        this.jasminCodeBuilder.append("\t.limit stack 99\n");
+        this.jasminCodeBuilder.append("\t.limit locals 99\n\n");
 
-        // Method Instructions
+        // Method Instructions TODO Are Labels Needed?
         for(Instruction instruction : method.getInstructions())
-            buildMethodInstructions(instruction);
+            this.jasminCodeBuilder.append(buildMethodInstructions(instruction));
 
-        this.jasminCodeBuilder.append(".end method\n\n");
+        // TODO Remove Return
+        this.jasminCodeBuilder.append("\treturn\n.end method\n\n");
 
     }
 
@@ -209,21 +216,52 @@ public class Jasmin {
     }
 
     private String buildAssignInstruction(AssignInstruction instruction) {
-        return "";
+        StringBuilder assignInstruction = new StringBuilder();
+
+        /*Operand operand = (Operand) instruction.getDest();
+        Type destType = operand.getType();
+
+        switch (destType.getTypeOfElement()){
+            case INT32 : case BOOLEAN:
+
+
+        }*/
+
+        return assignInstruction.toString();
     }
 
-    private String buildCallInstruction(CallInstruction call){
+    private String buildCallInstruction(CallInstruction instruction){
         StringBuilder callInstruction = new StringBuilder();
 
-        switch(call.getInvocationType()){
+        switch(instruction.getInvocationType()){
             case invokevirtual:
-                break;
+                callInstruction.append("\tinvokevirtual ");
             case invokeinterface:
                 break;
             case invokespecial:
                 break;
             case invokestatic:
-                callInstruction.append("invokestatic ");
+                for(Element operand: instruction.getListOfOperands())
+                    callInstruction.append(pushElement(operand));
+
+                callInstruction.append("\tinvokestatic ");
+
+                String callClass = ((Operand) instruction.getFirstArg()).getName();
+                String qualifiedCallClass = Objects.equals(callClass, "this")
+                        ? this.ollirClass.getClassName() : callClass;
+
+                callInstruction.append(this.fullyQualifiedNames.get(qualifiedCallClass))
+                               .append("/")
+                               .append(((LiteralElement) instruction.getSecondArg()).getLiteral().replace("\"", ""))
+                               .append("(");
+
+                for(Element operand : instruction.getListOfOperands())
+                    callInstruction.append(buildTypes(operand.getType()));
+
+                callInstruction.append(")")
+                               .append(buildTypes(instruction.getReturnType()))
+                               .append("\n");
+
             case NEW:
                 break;
             case arraylength:
@@ -231,13 +269,64 @@ public class Jasmin {
             case ldc:
                 break;
             default:
-                throw new NotImplementedException(call.getInvocationType());
+                throw new NotImplementedException(instruction.getInvocationType());
         }
+
+        /*if(instruction.getReturnType().getTypeOfElement() != ElementType.VOID)
+            callInstruction.append("\tpop\n");*/
 
         return callInstruction.toString();
     }
 
-    private String buildCallInvokeStaticInstruction(CallInstruction call) {
-        return "";
+    private String pushElement(Element element) {
+        // Literal Element
+        if(element.isLiteral())
+            return pushLiteral((LiteralElement) element);
+
+        String operandName = ((Operand) element).getName();
+
+        // Array Element
+        try{
+            if(this.variableTable.get(operandName).getVarType().getTypeOfElement() == ElementType.ARRAYREF
+                && element.getType().getTypeOfElement() != ElementType.ARRAYREF){
+                ArrayOperand arrayOperand = (ArrayOperand) element;
+                return pushElementDescriptor(this.variableTable.get(operandName))
+                        + pushElement(arrayOperand.getIndexOperands().get(0))
+                        + "\tiaload\n";
+            }
+        }
+        catch(ClassCastException ignored){} // Element is not an ArrayOperand
+
+        return pushElementDescriptor(this.variableTable.get(operandName));
+    }
+
+    private String pushElementDescriptor(Descriptor descriptor) {
+        ElementType type = descriptor.getVarType().getTypeOfElement();
+        if(type == ElementType.THIS)
+            return "\taload_0\n";
+
+        String pushType = (type == ElementType.INT32 || type == ElementType.BOOLEAN) ? "i" : "a";
+        String hasSM = (descriptor.getVirtualReg() > 0 && descriptor.getVirtualReg() <= 3) ? "_" : " ";
+
+        return "\t" + pushType + "load" + hasSM + descriptor.getVirtualReg() + "\n";
+    }
+
+    private String pushLiteral(LiteralElement element) {
+        StringBuilder literalElement = new StringBuilder("\t");
+        int literal = Integer.parseInt(element.getLiteral());
+
+        switch (element.getType().getTypeOfElement()){
+            case INT32: case BOOLEAN:
+                if(literal == -1) literalElement.append("iconst_m1\n");
+                else if (literal >= 0 && literal <= 5) literalElement.append("iconst_" + literal + "\n");
+                else if (literal >= -128 && literal <= 127) literalElement.append("bipush " + literal + "\n");
+                else if (literal > 127) literalElement.append("sipush " + literal + "\n");
+                else literalElement.append("ldc " + literal + "\n");
+                break;
+            default:
+                literalElement.append("ldc " + literal + "\n");
+        }
+
+        return literalElement.toString();
     }
 }

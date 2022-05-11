@@ -40,7 +40,7 @@ public class BackendTest {
         var output = TestUtils.runJasmin(jasminCode);
         assertEquals("Hello World!\nHello World Again!\n", SpecsStrings.normalizeFileContents(output));*/
 
-        OllirResult ollirResultTest = new OllirResult(SpecsIo.getResource("fixtures/public/ollir/myclass3.ollir"), Collections.emptyMap());
+        OllirResult ollirResultTest = new OllirResult(SpecsIo.getResource("fixtures/public/ollir/Fac.ollir"), Collections.emptyMap());
         var result = TestUtils.backend(ollirResultTest);
         result.compile();
 
