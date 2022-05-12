@@ -151,8 +151,10 @@ public class Jasmin {
         for(Instruction instruction : method.getInstructions())
             this.jasminCodeBuilder.append(buildMethodInstructions(instruction));
 
-        // TODO Remove Return
-        this.jasminCodeBuilder.append("\treturn\n.end method\n\n");
+        if (method.isConstructMethod())
+            this.jasminCodeBuilder.append("\treturn\n");
+
+        this.jasminCodeBuilder.append(".end method\n\n");
 
     }
 
@@ -172,8 +174,6 @@ public class Jasmin {
                 return buildPutFieldInstruction((PutFieldInstruction) instruction);
             case GETFIELD:
                 return buildGetFieldInstruction((GetFieldInstruction) instruction);
-            case UNARYOPER:
-                return buildUnaryOperatorInstruction((UnaryOpInstruction) instruction);
             case BINARYOPER:
                 return buildBinaryOperatorInstruction((BinaryOpInstruction) instruction);
             case NOPER:
@@ -185,14 +185,10 @@ public class Jasmin {
     }
 
     private String buildNOperInstruction(SingleOpInstruction instruction) {
-        return "";
+        return pushElement(instruction.getSingleOperand());
     }
 
     private String buildBinaryOperatorInstruction(BinaryOpInstruction instruction) {
-        return "";
-    }
-
-    private String buildUnaryOperatorInstruction(UnaryOpInstruction instruction) {
         return "";
     }
 
@@ -201,7 +197,18 @@ public class Jasmin {
     }
 
     private String buildReturnInstruction(ReturnInstruction instruction) {
-        return "";
+        StringBuilder returnInstruction = new StringBuilder();
+        if (!instruction.hasReturnValue())
+            return "\treturn\n";
+
+        Element operand = instruction.getOperand();
+        String returnType = (operand.getType().getTypeOfElement() == ElementType.INT32
+                || operand.getType().getTypeOfElement() == ElementType.BOOLEAN) ? "i" : "a";
+
+        returnInstruction.append(pushElement(operand)).append("\t").append(returnType).append("return\n");
+
+        return returnInstruction.toString();
+
     }
 
     private String buildPutFieldInstruction(PutFieldInstruction instruction) {
@@ -218,18 +225,57 @@ public class Jasmin {
 
     private String buildAssignInstruction(AssignInstruction instruction) {
         StringBuilder assignInstruction = new StringBuilder();
-
+        System.out.println("Started Assignment");
         Operand operand = (Operand) instruction.getDest();
         Type destType = operand.getType();
         Descriptor destVariable = this.variableTable.get(operand.getName());
 
-        if(instruction.getRhs().getInstType() == InstructionType.BINARYOPER){
+        // Increment Assignment TODO TEST
+       /*if(instruction.getRhs().getInstType() == InstructionType.BINARYOPER){
+            BinaryOpInstruction binaryOperation = (BinaryOpInstruction) instruction.getRhs();
+            Element leftOperand = binaryOperation.getLeftOperand();
+            Element rightOperand = binaryOperation.getRightOperand();
 
-        }
+            if(binaryOperation.getOperation().getOpType() == OperationType.ADD
+                || binaryOperation.getOperation().getOpType() == OperationType.SUB){
+                String operationSign = binaryOperation.getOperation().getOpType() == OperationType.ADD ? "" : "-";
 
+                if(!leftOperand.isLiteral() && ((Operand) leftOperand).getName().equals(operand.getName())
+                        && rightOperand.isLiteral()){
+                    String leftValue = operationSign +
+                            ((LiteralElement) binaryOperation.getLeftOperand()).getLiteral();
+
+                    if(Integer.parseInt(leftValue) >= -128 && Integer.parseInt(leftValue) <= 127){
+                        assignInstruction.append("\tiinc ")
+                                .append(destVariable.getVirtualReg()).append(" ")
+                                .append(leftValue)
+                                .append(((LiteralElement) leftOperand).getLiteral()).append("\n");
+                        return assignInstruction.toString();
+                    }
+
+                }
+
+                else if(!rightOperand.isLiteral() && ((Operand) rightOperand).getName().equals(operand.getName())
+                        && leftOperand.isLiteral()){
+                    String rightValue = operationSign +
+                            ((LiteralElement) binaryOperation.getLeftOperand()).getLiteral();
+
+                    if(Integer.parseInt(rightValue) >= -128 && Integer.parseInt(rightValue) <= 127) {
+                        assignInstruction.append("\tiinc ")
+                                .append(destVariable.getVirtualReg()).append(" ")
+                                .append(rightValue)
+                                .append(((LiteralElement) leftOperand).getLiteral()).append("\n");
+                        return assignInstruction.toString();
+                    }
+                }
+            }
+
+        }*/
+
+        // Array Assignment TODO TEST
         if(destVariable.getVarType().getTypeOfElement() == ElementType.ARRAYREF
                 && destType.getTypeOfElement() != ElementType.ARRAYREF){
-
+            System.out.println("In Array Assignment");
             Element index = ((ArrayOperand) operand).getIndexOperands().get(0);
 
             assignInstruction.append(pushElementDescriptor(destVariable))
@@ -242,7 +288,7 @@ public class Jasmin {
                 return assignInstruction.toString();
             }
         }
-
+        System.out.println(instruction.getRhs().getInstType());
         assignInstruction.append(buildMethodInstructions(instruction.getRhs()));
 
         String storeType = (destType.getTypeOfElement() == ElementType.INT32
@@ -272,7 +318,7 @@ public class Jasmin {
                 String virtualClassCallName = Objects.equals(virtualClass, "this")
                         ? this.ollirClass.getClassName() : virtualClass;
 
-                System.out.println(virtualClass);
+
                 callInstruction.append(virtualClassCallName)
                         .append("/")
                         .append(((LiteralElement) instruction.getSecondArg()).getLiteral().replace("\"", ""))
@@ -322,7 +368,7 @@ public class Jasmin {
                         .append("\n");
                 break;
             case NEW:
-                if(instruction.getFirstArg().getType().getTypeOfElement() == ElementType.OBJECTREF){
+                if(instruction.getReturnType().getTypeOfElement() == ElementType.OBJECTREF){
                     for(Element operand: instruction.getListOfOperands())
                         callInstruction.append(pushElement(operand));
 
@@ -330,7 +376,7 @@ public class Jasmin {
                             .append(((Operand) instruction.getFirstArg()).getName())
                             .append("\n\tdup\n");
                 }
-                else if (instruction.getFirstArg().getType().getTypeOfElement() == ElementType.ARRAYREF){
+                else if (instruction.getReturnType().getTypeOfElement() == ElementType.ARRAYREF){
                     for(Element operand: instruction.getListOfOperands())
                         callInstruction.append(pushElement(operand));
 
