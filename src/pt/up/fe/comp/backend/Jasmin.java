@@ -192,10 +192,6 @@ public class Jasmin {
         return "";
     }
 
-    private String buildGetFieldInstruction(GetFieldInstruction instruction) {
-        return "";
-    }
-
     private String buildReturnInstruction(ReturnInstruction instruction) {
         StringBuilder returnInstruction = new StringBuilder();
         if (!instruction.hasReturnValue())
@@ -212,8 +208,43 @@ public class Jasmin {
     }
 
     private String buildPutFieldInstruction(PutFieldInstruction instruction) {
-        return "";
+        StringBuilder putFieldInstruction = new StringBuilder();
+
+        Operand field = ((Operand) instruction.getSecondOperand());
+
+        String fieldClass = ((Operand)instruction.getFirstOperand()).getName();
+        String fieldName =  Objects.equals(fieldClass, "this")
+                ? this.ollirClass.getClassName() : fieldClass;
+
+        putFieldInstruction.append(pushElement(instruction.getFirstOperand()))
+                           .append(pushElement(instruction.getThirdOperand()))
+                           .append("\tputfield ")
+                           .append(fieldName).append("/")
+                           .append(field.getName()).append(" ")
+                           .append(buildTypes(field.getType())).append("\n");
+
+        return putFieldInstruction.toString();
     }
+
+
+    private String buildGetFieldInstruction(GetFieldInstruction instruction) {
+        StringBuilder getFieldInstruction = new StringBuilder();
+
+        Operand field = ((Operand) instruction.getSecondOperand());
+
+        String fieldClass = ((Operand)instruction.getFirstOperand()).getName();
+        String fieldName =  Objects.equals(fieldClass, "this")
+                ? this.ollirClass.getClassName() : fieldClass;
+
+        getFieldInstruction.append(pushElement(instruction.getFirstOperand()))
+                .append("\tgetfield ")
+                .append(fieldName).append("/")
+                .append(field.getName()).append(" ")
+                .append(buildTypes(field.getType())).append("\n");
+
+        return getFieldInstruction.toString();
+    }
+
 
     private String buildBranchInstruction(CondBranchInstruction instruction) {
         return "";
@@ -225,7 +256,7 @@ public class Jasmin {
 
     private String buildAssignInstruction(AssignInstruction instruction) {
         StringBuilder assignInstruction = new StringBuilder();
-        System.out.println("Started Assignment");
+
         Operand operand = (Operand) instruction.getDest();
         Type destType = operand.getType();
         Descriptor destVariable = this.variableTable.get(operand.getName());
@@ -369,14 +400,18 @@ public class Jasmin {
                 break;
             case NEW:
                 if(instruction.getReturnType().getTypeOfElement() == ElementType.OBJECTREF){
-                    for(Element operand: instruction.getListOfOperands())
+                    System.out.println("Inside New ObjectRef");
+                    for(Element operand: instruction.getListOfOperands()) {
+                        System.out.println(operand.getType());
                         callInstruction.append(pushElement(operand));
+                    }
 
                     callInstruction.append("\tnew ")
                             .append(((Operand) instruction.getFirstArg()).getName())
                             .append("\n\tdup\n");
                 }
                 else if (instruction.getReturnType().getTypeOfElement() == ElementType.ARRAYREF){
+                    System.out.println("Inside New ArrayRef");
                     for(Element operand: instruction.getListOfOperands())
                         callInstruction.append(pushElement(operand));
 
