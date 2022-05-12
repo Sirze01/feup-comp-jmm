@@ -13,6 +13,7 @@ public class Jasmin {
     private Map<String, String> fullyQualifiedNames;
     private HashMap<String, Descriptor> variableTable;
     private StringBuilder jasminCodeBuilder;
+    private String superClassName;
 
     public String build(ClassUnit ollirClass) {
         this.ollirClass = ollirClass;
@@ -47,40 +48,31 @@ public class Jasmin {
                 .append("\n");
 
         // Class Super Definition
-        String superClassName = this.ollirClass.getSuperClass() != null ?
+        this.superClassName = this.ollirClass.getSuperClass() != null ?
                 this.fullyQualifiedNames.get(this.ollirClass.getSuperClass()) : "java/lang/Object";
         this.jasminCodeBuilder.append(".super ")
-               .append(superClassName)
-               .append("\n\n");
+                .append(superClassName)
+                .append("\n\n");
 
         // Class Fields Definition
         for(Field field : this.ollirClass.getFields())
             this.jasminCodeBuilder.append(buildClassField(field));
 
         this.jasminCodeBuilder.append("\n");
-
-        // Class Initialization Definition
-        this.jasminCodeBuilder.append(".method public <init>()V\n")
-                              .append("\taload_0\n")
-                              .append("\tinvokenonvirtual ")
-                              .append(superClassName)
-                              .append("/<init>()V\n")
-                              .append("\treturn\n")
-                              .append(".end method\n\n");
     }
 
     private String buildClassField(Field field) {
         StringBuilder classField = new StringBuilder();
         classField.append(".field ")
-                  .append(accessScope(field.getFieldAccessModifier()));
+                .append(accessScope(field.getFieldAccessModifier()));
 
         if(field.isStaticField()) classField.append("static ");
         if(field.isFinalField()) classField.append("final ");
 
         classField.append(field.getFieldName())
-                  .append(" ")
-                  .append(buildTypes(field.getFieldType()))
-                  .append("\n");
+                .append(" ")
+                .append(buildTypes(field.getFieldType()))
+                .append("\n");
 
         if(field.isInitialized())
             classField.append(" = ").append(field.getInitialValue());
@@ -90,18 +82,25 @@ public class Jasmin {
     }
 
     private String buildTypes(Type type) {
-        switch(type.getTypeOfElement()){
-            case ARRAYREF:
-                return "[" + buildTypes(((ArrayType) type).getTypeOfElements());
-            case OBJECTREF: case CLASS:
-                String className = ((ClassType) type).getName();
-                String fullyQualifiedClassName = this.fullyQualifiedNames.get(className);
-                String finalClassName = fullyQualifiedClassName != null
-                        ? this.fullyQualifiedNames.get(className) : className;
-                return "L" + finalClassName + ";";
-            default:
-                return buildTypes(type.getTypeOfElement());
+        StringBuilder typeCode = new StringBuilder();
+        ElementType elementType = type.getTypeOfElement();
+
+        if(elementType == ElementType.ARRAYREF){
+            elementType = ((ArrayType) type).getArrayType();
+            typeCode.append("[");
         }
+
+        if((elementType == ElementType.OBJECTREF || elementType == ElementType.CLASS)){
+            String className = elementType.getClass().getName();
+            String fullyQualifiedClassName = this.fullyQualifiedNames.get(className);
+            String finalClassName = fullyQualifiedClassName != null
+                    ? this.fullyQualifiedNames.get(className) : className;
+            return "L" + finalClassName + ";";
+        }
+
+        typeCode.append(buildTypes(elementType));
+
+        return typeCode.toString();
     }
 
     private String buildTypes(ElementType elementType) {
@@ -128,23 +127,25 @@ public class Jasmin {
         this.variableTable = method.getVarTable();
         // Method Signature Definition
         this.jasminCodeBuilder.append(".method ")
-                              .append(accessScope(method.getMethodAccessModifier()))
-                              .append(method.isStaticMethod() ? "static " : "")
-                              .append(method.isFinalMethod() ? "final " : "")
-                              .append(method.isConstructMethod() ? "<init>" : method.getMethodName())
-                              .append("(");
+                .append(accessScope(method.getMethodAccessModifier()))
+                .append(method.isStaticMethod() ? "static " : "")
+                .append(method.isFinalMethod() ? "final " : "")
+                .append(method.isConstructMethod() ? "public <init>" : method.getMethodName())
+                .append("(");
 
         // Method Parameters
         String methodParamTypes = method.getParams().stream()
-                                                        .map(element -> buildTypes(element.getType()))
-                                                        .collect(Collectors.joining());
+                .map(element -> buildTypes(element.getType()))
+                .collect(Collectors.joining());
         this.jasminCodeBuilder.append(methodParamTypes).append(")")
-                              .append(buildTypes(method.getReturnType()))
-                              .append("\n");
+                .append(buildTypes(method.getReturnType()))
+                .append("\n");
 
         // Limit Declarations
-        this.jasminCodeBuilder.append("\t.limit stack 99\n");
-        this.jasminCodeBuilder.append("\t.limit locals 99\n\n");
+        if(!method.isConstructMethod()) {
+            this.jasminCodeBuilder.append("\t.limit stack 99\n");
+            this.jasminCodeBuilder.append("\t.limit locals 99\n\n");
+        }
 
         // Method Instructions TODO Are Labels Needed?
         for(Instruction instruction : method.getInstructions())
@@ -156,30 +157,30 @@ public class Jasmin {
     }
 
     private String buildMethodInstructions(Instruction instruction){
-       switch(instruction.getInstType()){
-           case ASSIGN:
-               return buildAssignInstruction((AssignInstruction) instruction);
-           case CALL:
-               return buildCallInstruction((CallInstruction) instruction);
-           case GOTO:
-               return buildGoToInstruction((GotoInstruction) instruction);
-           case BRANCH:
-               return buildBranchInstruction((CondBranchInstruction) instruction);
-           case RETURN:
-               return buildReturnInstruction((ReturnInstruction) instruction);
-           case PUTFIELD:
-               return buildPutFieldInstruction((PutFieldInstruction) instruction);
-           case GETFIELD:
-               return buildGetFieldInstruction((GetFieldInstruction) instruction);
-           case UNARYOPER:
-               return buildUnaryOperatorInstruction((UnaryOpInstruction) instruction);
-           case BINARYOPER:
-               return buildBinaryOperatorInstruction((BinaryOpInstruction) instruction);
-           case NOPER:
-               return buildNOperInstruction((SingleOpInstruction) instruction);
-           default:
-               throw new NotImplementedException(instruction.getInstType());
-       }
+        switch(instruction.getInstType()){
+            case ASSIGN:
+                return buildAssignInstruction((AssignInstruction) instruction);
+            case CALL:
+                return buildCallInstruction((CallInstruction) instruction);
+            case GOTO:
+                return buildGoToInstruction((GotoInstruction) instruction);
+            case BRANCH:
+                return buildBranchInstruction((CondBranchInstruction) instruction);
+            case RETURN:
+                return buildReturnInstruction((ReturnInstruction) instruction);
+            case PUTFIELD:
+                return buildPutFieldInstruction((PutFieldInstruction) instruction);
+            case GETFIELD:
+                return buildGetFieldInstruction((GetFieldInstruction) instruction);
+            case UNARYOPER:
+                return buildUnaryOperatorInstruction((UnaryOpInstruction) instruction);
+            case BINARYOPER:
+                return buildBinaryOperatorInstruction((BinaryOpInstruction) instruction);
+            case NOPER:
+                return buildNOperInstruction((SingleOpInstruction) instruction);
+            default:
+                throw new NotImplementedException(instruction.getInstType());
+        }
 
     }
 
@@ -218,14 +219,39 @@ public class Jasmin {
     private String buildAssignInstruction(AssignInstruction instruction) {
         StringBuilder assignInstruction = new StringBuilder();
 
-        /*Operand operand = (Operand) instruction.getDest();
+        Operand operand = (Operand) instruction.getDest();
         Type destType = operand.getType();
+        Descriptor destVariable = this.variableTable.get(operand.getName());
 
-        switch (destType.getTypeOfElement()){
-            case INT32 : case BOOLEAN:
+        if(instruction.getRhs().getInstType() == InstructionType.BINARYOPER){
 
+        }
 
-        }*/
+        if(destVariable.getVarType().getTypeOfElement() == ElementType.ARRAYREF
+                && destType.getTypeOfElement() != ElementType.ARRAYREF){
+
+            Element index = ((ArrayOperand) operand).getIndexOperands().get(0);
+
+            assignInstruction.append(pushElementDescriptor(destVariable))
+                    .append(pushElement(index));
+
+            // Arrays with other dest types are stored as "astore"
+            if(destType.getTypeOfElement() == ElementType.INT32 || destType.getTypeOfElement() == ElementType.BOOLEAN){
+                assignInstruction.append(buildMethodInstructions(instruction.getRhs()))
+                        .append("\tiastore");
+                return assignInstruction.toString();
+            }
+        }
+
+        assignInstruction.append(buildMethodInstructions(instruction.getRhs()));
+
+        String storeType = (destType.getTypeOfElement() == ElementType.INT32
+                || destType.getTypeOfElement() == ElementType.BOOLEAN) ? "i" : "a";
+        String hasSM = (destVariable.getVirtualReg() > 0 && destVariable.getVirtualReg() <= 3) ? "_" : " ";
+
+        assignInstruction.append("\t")
+                .append(storeType).append("store").append(hasSM).append(destVariable.getVirtualReg())
+                .append("\n");
 
         return assignInstruction.toString();
     }
@@ -235,10 +261,43 @@ public class Jasmin {
 
         switch(instruction.getInvocationType()){
             case invokevirtual:
+                callInstruction.append(pushElement(instruction.getFirstArg()));
+
+                for(Element operand: instruction.getListOfOperands())
+                    callInstruction.append(pushElement(operand));
+
                 callInstruction.append("\tinvokevirtual ");
-            case invokeinterface:
-                break;
+
+                String virtualClass = ((ClassType) instruction.getFirstArg().getType()).getName();
+                String virtualClassCallName = Objects.equals(virtualClass, "this")
+                        ? this.ollirClass.getClassName() : virtualClass;
+
+                System.out.println(virtualClass);
+                callInstruction.append(virtualClassCallName)
+                        .append("/")
+                        .append(((LiteralElement) instruction.getSecondArg()).getLiteral().replace("\"", ""))
+                        .append("(");
+
+                for(Element operand : instruction.getListOfOperands())
+                    callInstruction.append(buildTypes(operand.getType()));
+
+                callInstruction.append(")")
+                        .append(buildTypes(instruction.getReturnType()))
+                        .append("\n");
+
             case invokespecial:
+                callInstruction.append(pushElement(instruction.getFirstArg()));
+
+                String initClassName = instruction.getFirstArg().getType().getTypeOfElement() == ElementType.THIS
+                        ? this.superClassName : this.ollirClass.getClassName();
+                callInstruction.append("\tinvokespecial ").append(initClassName).append("/<init>(");
+
+                for(Element operand : instruction.getListOfOperands())
+                    callInstruction.append(buildTypes(operand.getType()));
+
+                callInstruction.append(")")
+                        .append(buildTypes(instruction.getReturnType()))
+                        .append("\n");
                 break;
             case invokestatic:
                 for(Element operand: instruction.getListOfOperands())
@@ -246,27 +305,53 @@ public class Jasmin {
 
                 callInstruction.append("\tinvokestatic ");
 
-                String callClass = ((Operand) instruction.getFirstArg()).getName();
-                String qualifiedCallClass = Objects.equals(callClass, "this")
-                        ? this.ollirClass.getClassName() : callClass;
+                String staticClass = ((Operand) instruction.getFirstArg()).getName();
+                String staticClassCallName = Objects.equals(staticClass, "this")
+                        ? this.ollirClass.getClassName() : staticClass;
 
-                callInstruction.append(this.fullyQualifiedNames.get(qualifiedCallClass))
-                               .append("/")
-                               .append(((LiteralElement) instruction.getSecondArg()).getLiteral().replace("\"", ""))
-                               .append("(");
+                callInstruction.append(staticClassCallName)
+                        .append("/")
+                        .append(((LiteralElement) instruction.getSecondArg()).getLiteral().replace("\"", ""))
+                        .append("(");
 
                 for(Element operand : instruction.getListOfOperands())
                     callInstruction.append(buildTypes(operand.getType()));
 
                 callInstruction.append(")")
-                               .append(buildTypes(instruction.getReturnType()))
-                               .append("\n");
-
+                        .append(buildTypes(instruction.getReturnType()))
+                        .append("\n");
+                break;
             case NEW:
+                if(instruction.getFirstArg().getType().getTypeOfElement() == ElementType.OBJECTREF){
+                    for(Element operand: instruction.getListOfOperands())
+                        callInstruction.append(pushElement(operand));
+
+                    callInstruction.append("\tnew ")
+                            .append(((Operand) instruction.getFirstArg()).getName())
+                            .append("\n\tdup\n");
+                }
+                else if (instruction.getFirstArg().getType().getTypeOfElement() == ElementType.ARRAYREF){
+                    for(Element operand: instruction.getListOfOperands())
+                        callInstruction.append(pushElement(operand));
+
+                    if(instruction.getListOfOperands().get(0).getType().getTypeOfElement() == ElementType.INT32)
+                        callInstruction.append("\tnewarray int\n");
+                    else
+                        throw new NotImplementedException("New Array with Type"
+                                + instruction.getListOfOperands().get(0).getType().getTypeOfElement());
+                    // Other Array Types are not supported
+                }
+                else
+                    throw new NotImplementedException("New with type "
+                            + instruction.getFirstArg().getType().getTypeOfElement());
+                // Other new types are not supported
                 break;
             case arraylength:
+                callInstruction.append(pushElement(instruction.getFirstArg()))
+                        .append("\tarraylength\n");
                 break;
             case ldc:
+                callInstruction.append(pushElement(instruction.getFirstArg()));
                 break;
             default:
                 throw new NotImplementedException(instruction.getInvocationType());
@@ -288,7 +373,7 @@ public class Jasmin {
         // Array Element
         try{
             if(this.variableTable.get(operandName).getVarType().getTypeOfElement() == ElementType.ARRAYREF
-                && element.getType().getTypeOfElement() != ElementType.ARRAYREF){
+                    && element.getType().getTypeOfElement() != ElementType.ARRAYREF){
                 ArrayOperand arrayOperand = (ArrayOperand) element;
                 return pushElementDescriptor(this.variableTable.get(operandName))
                         + pushElement(arrayOperand.getIndexOperands().get(0))
@@ -317,14 +402,19 @@ public class Jasmin {
 
         switch (element.getType().getTypeOfElement()){
             case INT32: case BOOLEAN:
-                if(literal == -1) literalElement.append("iconst_m1\n");
-                else if (literal >= 0 && literal <= 5) literalElement.append("iconst_" + literal + "\n");
-                else if (literal >= -128 && literal <= 127) literalElement.append("bipush " + literal + "\n");
-                else if (literal > 127) literalElement.append("sipush " + literal + "\n");
-                else literalElement.append("ldc " + literal + "\n");
+                if(literal == -1)
+                    literalElement.append("iconst_m1\n");
+                else if (literal >= 0 && literal <= 5)
+                    literalElement.append("iconst_").append(literal).append("\n");
+                else if (literal >= -128 && literal <= 127)
+                    literalElement.append("bipush ").append(literal).append("\n");
+                else if (literal > 127)
+                    literalElement.append("sipush ").append(literal).append("\n");
+                else
+                    literalElement.append("ldc ").append(literal).append("\n");
                 break;
             default:
-                literalElement.append("ldc " + literal + "\n");
+                literalElement.append("ldc ").append(literal).append("\n");
         }
 
         return literalElement.toString();
