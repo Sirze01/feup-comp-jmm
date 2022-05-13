@@ -301,14 +301,14 @@ public class Jasmin {
         // Increment Assignment TODO TEST
        if(instruction.getRhs().getInstType() == InstructionType.BINARYOPER){
             BinaryOpInstruction binaryOperation = (BinaryOpInstruction) instruction.getRhs();
-            Element leftOperand = binaryOperation.getLeftOperand();
-            Element rightOperand = binaryOperation.getRightOperand();
+            Operand leftOperand = (Operand) binaryOperation.getLeftOperand();
+            Operand rightOperand = (Operand) binaryOperation.getRightOperand();
 
             if(binaryOperation.getOperation().getOpType() == OperationType.ADD
                 || binaryOperation.getOperation().getOpType() == OperationType.SUB){
                 String operationSign = binaryOperation.getOperation().getOpType() == OperationType.ADD ? "" : "-";
 
-                if(!leftOperand.isLiteral() && ((Operand) leftOperand).getName().equals(operand.getName())
+                if(!leftOperand.isLiteral() && leftOperand.getName().equals(operand.getName())
                         && rightOperand.isLiteral()){
                     String leftValue = operationSign +
                             ((LiteralElement) binaryOperation.getLeftOperand()).getLiteral();
@@ -317,13 +317,13 @@ public class Jasmin {
                         assignInstruction.append("\tiinc ")
                                 .append(destVariable.getVirtualReg()).append(" ")
                                 .append(leftValue)
-                                .append(((LiteralElement) leftOperand).getLiteral()).append("\n");
+                                .append(((LiteralElement) binaryOperation.getRightOperand()).getLiteral()).append("\n");
                         return assignInstruction.toString();
                     }
 
                 }
 
-                else if(!rightOperand.isLiteral() && ((Operand) rightOperand).getName().equals(operand.getName())
+                else if(!rightOperand.isLiteral() && (rightOperand).getName().equals(operand.getName())
                         && leftOperand.isLiteral()){
                     String rightValue = operationSign +
                             ((LiteralElement) binaryOperation.getLeftOperand()).getLiteral();
@@ -332,7 +332,7 @@ public class Jasmin {
                         assignInstruction.append("\tiinc ")
                                 .append(destVariable.getVirtualReg()).append(" ")
                                 .append(rightValue)
-                                .append(((LiteralElement) leftOperand).getLiteral()).append("\n");
+                                .append(((LiteralElement) binaryOperation.getLeftOperand()).getLiteral()).append("\n");
                         return assignInstruction.toString();
                     }
                 }
@@ -343,7 +343,6 @@ public class Jasmin {
         // Array Assignment (Needs Testing - Next Checkpoint)
         if(destVariable.getVarType().getTypeOfElement() == ElementType.ARRAYREF
                 && destType.getTypeOfElement() != ElementType.ARRAYREF){
-            System.out.println("In Array Assignment");
             Element index = ((ArrayOperand) operand).getIndexOperands().get(0);
 
             assignInstruction.append(pushElementDescriptor(destVariable))
@@ -356,7 +355,6 @@ public class Jasmin {
                 return assignInstruction.toString();
             }
         }
-        System.out.println(instruction.getRhs().getInstType());
         assignInstruction.append(buildMethodInstructions(instruction.getRhs()));
 
         String storeType = (destType.getTypeOfElement() == ElementType.INT32
@@ -398,7 +396,7 @@ public class Jasmin {
                 callInstruction.append(")")
                         .append(buildTypes(instruction.getReturnType()))
                         .append("\n");
-
+                break;
             case invokespecial:
                 callInstruction.append(pushElement(instruction.getFirstArg()));
 
@@ -437,9 +435,7 @@ public class Jasmin {
                 break;
             case NEW:
                 if(instruction.getReturnType().getTypeOfElement() == ElementType.OBJECTREF){
-                    System.out.println("Inside New ObjectRef");
                     for(Element operand: instruction.getListOfOperands()) {
-                        System.out.println(operand.getType());
                         callInstruction.append(pushElement(operand));
                     }
 
@@ -448,7 +444,6 @@ public class Jasmin {
                             .append("\n\tdup\n");
                 }
                 else if (instruction.getReturnType().getTypeOfElement() == ElementType.ARRAYREF){
-                    System.out.println("Inside New ArrayRef");
                     for(Element operand: instruction.getListOfOperands())
                         callInstruction.append(pushElement(operand));
 
@@ -474,9 +469,6 @@ public class Jasmin {
             default:
                 throw new NotImplementedException(instruction.getInvocationType());
         }
-
-        /*if(instruction.getReturnType().getTypeOfElement() != ElementType.VOID)
-            callInstruction.append("\tpop\n");*/
 
         return callInstruction.toString();
     }
