@@ -16,10 +16,12 @@ public class Jasmin {
     private String superClassName;
 
     int operatorLabel;
+    int comparisonLabel;
 
     public String build(ClassUnit ollirClass) throws OllirErrorException {
         this.ollirClass = ollirClass;
         this.operatorLabel = 0;
+        this.comparisonLabel = 0;
 
         this.ollirClass.checkMethodLabels();
         this.ollirClass.buildCFGs();
@@ -225,59 +227,52 @@ public class Jasmin {
                                    .append("\n\tior\n");
                 break;
             case NOT: case NOTB:
-                labelTrue = "Label_" + this.operatorLabel++;
-                labelContinue = "Label_" + this.operatorLabel++;
+                labelTrue = "True_" + this.operatorLabel;
+                labelContinue = "Continue_" + this.operatorLabel++;
 
                 binaryOpInstruction.append(pushElement(leftOperand))
-                                   .append("\tifgt ")
-                                   .append(labelTrue)
+                                   .append("\tifgt ").append(labelTrue)
                                    .append("\n\ticonst_1\n")
-                                   .append("\tgoto ")
-                                   .append(labelContinue).append("\n")
+                                   .append("\tgoto ").append(labelContinue).append("\n")
                                    .append(labelTrue).append(":\n")
                                    .append("\ticonst_0\n")
                                    .append(labelContinue).append(":\n");
                 break;
             case EQ: case EQI32:
-                labelTrue = "Label_" + this.operatorLabel++;
-                labelContinue = "Label_" + this.operatorLabel++;
+                labelTrue = "True_" + this.operatorLabel;
+                labelContinue = "Continue_" + this.operatorLabel++;
 
                 binaryOpInstruction.append(pushElement(leftOperand))
                                    .append(pushElement(rightOperand))
-                                   .append("\tif_icmpeq ")
-                                   .append(labelTrue)
+                                   .append("\tif_icmpeq ").append(labelTrue)
                                    .append("\n\ticonst_0\n")
-                                   .append("\tgoto ")
-                                   .append(labelContinue).append("\n")
+                                   .append("\tgoto ").append(labelContinue).append("\n")
                                    .append(labelTrue).append(":\n")
                                    .append("\ticonst_1\n")
                                    .append(labelContinue).append(":\n");
+                break;
             case LTH: case LTHI32:
-                labelTrue = "Label_" + this.operatorLabel++;
-                labelContinue = "Label_" + this.operatorLabel++;
+                labelTrue = "True_" + this.operatorLabel;
+                labelContinue = "Continue_" + this.operatorLabel++;
 
                 binaryOpInstruction.append(pushElement(leftOperand))
                         .append(pushElement(rightOperand))
-                        .append("\tif_icmplt ")
-                        .append(labelTrue)
+                        .append("\tif_icmplt ").append(labelTrue)
                         .append("\n\ticonst_0\n")
-                        .append("\tgoto ")
-                        .append(labelContinue).append("\n")
+                        .append("\tgoto ").append(labelContinue).append("\n")
                         .append(labelTrue).append(":\n")
                         .append("\ticonst_1\n")
                         .append(labelContinue).append(":\n");
                 break;
             case GTE: case GTEI32:
-                labelTrue = "Label_" + this.operatorLabel++;
-                labelContinue = "Label_" + this.operatorLabel++;
+                labelTrue = "True_" + this.operatorLabel;
+                labelContinue = "Continue_" + this.operatorLabel++;
 
                 binaryOpInstruction.append(pushElement(leftOperand))
                         .append(pushElement(rightOperand))
-                        .append("\tif_icmpge ")
-                        .append(labelTrue)
+                        .append("\tif_icmpge ").append(labelTrue)
                         .append("\n\ticonst_0\n")
-                        .append("\tgoto ")
-                        .append(labelContinue).append("\n")
+                        .append("\tgoto ").append(labelContinue).append("\n")
                         .append(labelTrue).append(":\n")
                         .append("\ticonst_1\n")
                         .append(labelContinue).append(":\n");
@@ -367,12 +362,35 @@ public class Jasmin {
         StringBuilder condBranchInstruction = new StringBuilder();
 
         BinaryOpInstruction condition= ((BinaryOpInstruction)instruction.getCondition());
-        if(condition.getOperation().getOpType() == OperationType.ANDB){
-            return "";
-        }
 
         Element leftOperand = condition.getLeftOperand();
         Element rightOperand = condition.getRightOperand();
+
+        if(condition.getOperation().getOpType() == OperationType.ANDB){
+            String labelComparison = "Condition_" + this.comparisonLabel++;
+
+            condBranchInstruction.append(pushElement(leftOperand))
+                    .append("\tifeq ").append(labelComparison).append("\n")
+                    .append(pushElement(rightOperand))
+                    .append("\tifeq ").append(labelComparison).append("\n")
+                    .append("\tgoto ").append(instruction.getLabel()).append("\n")
+                    .append(labelComparison).append(":\n");
+
+            return condBranchInstruction.toString();
+        }
+
+        if(condition.getOperation().getOpType() == OperationType.ORB){
+            String labelComparison = "Condition_" + this.comparisonLabel++;
+
+            condBranchInstruction.append(pushElement(leftOperand))
+                    .append("\tifgt ").append(instruction.getLabel()).append("\n")
+                    .append(pushElement(rightOperand))
+                    .append("\tifeq ").append(instruction.getLabel()).append("\n")
+                    .append("\tgoto ").append(labelComparison).append("\n")
+                    .append(labelComparison).append(":\n");
+
+            return condBranchInstruction.toString();
+        }
 
         condBranchInstruction.append(pushElement(leftOperand))
                 .append(pushElement(rightOperand))
@@ -392,7 +410,7 @@ public class Jasmin {
                 condBranchInstruction.append("if_icmpne ");
                 break;
             default:
-                throw new NotImplementedException("Operation Not Implemented: "
+                throw new NotImplementedException("Condition Operation Not Implemented: "
                         + condition.getOperation().getOpType());
         }
 
