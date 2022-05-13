@@ -15,8 +15,14 @@ public class Jasmin {
     private StringBuilder jasminCodeBuilder;
     private String superClassName;
 
-    public String build(ClassUnit ollirClass) {
+    int operatorLabel;
+
+    public String build(ClassUnit ollirClass) throws OllirErrorException {
         this.ollirClass = ollirClass;
+        this.operatorLabel = 0;
+
+        this.ollirClass.checkMethodLabels();
+        this.ollirClass.buildCFGs();
         this.ollirClass.buildVarTables();
 
         this.jasminCodeBuilder = new StringBuilder();
@@ -91,11 +97,16 @@ public class Jasmin {
         }
 
         if((elementType == ElementType.OBJECTREF || elementType == ElementType.CLASS)){
-            String className = elementType.getClass().getName();
+            // Are Arrays of Objects Supported?
+            String className = type instanceof ClassType ?
+                    ((ClassType) type).getName() : this.ollirClass.getClassName();
+
             String fullyQualifiedClassName = this.fullyQualifiedNames.get(className);
             String finalClassName = fullyQualifiedClassName != null
                     ? this.fullyQualifiedNames.get(className) : className;
-            return "L" + finalClassName + ";";
+
+            typeCode.append("L").append(finalClassName).append(";");
+            return typeCode.toString();
         }
 
         typeCode.append(buildTypes(elementType));
@@ -147,11 +158,19 @@ public class Jasmin {
             this.jasminCodeBuilder.append("\t.limit locals 99\n\n");
         }
 
-        // Method Instructions TODO Are Labels Needed?
-        for(Instruction instruction : method.getInstructions())
+        HashMap<String, Instruction> labels = method.getLabels();
+        for(Instruction instruction : method.getInstructions()) {
+            for(String label : labels.keySet())
+               if(labels.get(label) == instruction) this.jasminCodeBuilder.append(label).append(":\n");
+
             this.jasminCodeBuilder.append(buildMethodInstructions(instruction));
 
-        if (method.isConstructMethod())
+            if(instruction.getInstType() == InstructionType.CALL)
+                if(((CallInstruction) instruction).getReturnType().getTypeOfElement() != ElementType.VOID)
+                    this.jasminCodeBuilder.append("\tpop\n");
+        }
+
+        if (method.isConstructMethod() || method.getReturnType().getTypeOfElement() == ElementType.VOID)
             this.jasminCodeBuilder.append("\treturn\n");
 
         this.jasminCodeBuilder.append(".end method\n\n");
@@ -190,17 +209,78 @@ public class Jasmin {
 
     private String buildBinaryOperatorInstruction(BinaryOpInstruction instruction) {
         StringBuilder binaryOpInstruction = new StringBuilder();
-
+        String labelTrue, labelContinue;
         Element leftOperand = instruction.getLeftOperand();
         Element rightOperand = instruction.getRightOperand();
 
         switch(instruction.getOperation().getOpType()){
-            case AND: case ANDB: case ANDI32:
-                binaryOpInstruction.append(pushElement(leftOperand));
+            case ANDB: case ANDI32:
+                binaryOpInstruction.append(pushElement(leftOperand))
+                                   .append(pushElement(rightOperand))
+                                   .append("\n\tiand\n");
+                break;
+            case ORB: case ORI32:
+                binaryOpInstruction.append(pushElement(leftOperand))
+                                   .append(pushElement(rightOperand))
+                                   .append("\n\tior\n");
                 break;
             case NOT: case NOTB:
+                labelTrue = "Label_" + this.operatorLabel++;
+                labelContinue = "Label_" + this.operatorLabel++;
+
+                binaryOpInstruction.append(pushElement(leftOperand))
+                                   .append("\tifgt ")
+                                   .append(labelTrue)
+                                   .append("\n\ticonst_1\n")
+                                   .append("\tgoto ")
+                                   .append(labelContinue).append("\n")
+                                   .append(labelTrue).append(":\n")
+                                   .append("\ticonst_0\n")
+                                   .append(labelContinue).append(":\n");
                 break;
+            case EQ: case EQI32:
+                labelTrue = "Label_" + this.operatorLabel++;
+                labelContinue = "Label_" + this.operatorLabel++;
+
+                binaryOpInstruction.append(pushElement(leftOperand))
+                                   .append(pushElement(rightOperand))
+                                   .append("\tif_icmpeq ")
+                                   .append(labelTrue)
+                                   .append("\n\ticonst_0\n")
+                                   .append("\tgoto ")
+                                   .append(labelContinue).append("\n")
+                                   .append(labelTrue).append(":\n")
+                                   .append("\ticonst_1\n")
+                                   .append(labelContinue).append(":\n");
             case LTH: case LTHI32:
+                labelTrue = "Label_" + this.operatorLabel++;
+                labelContinue = "Label_" + this.operatorLabel++;
+
+                binaryOpInstruction.append(pushElement(leftOperand))
+                        .append(pushElement(rightOperand))
+                        .append("\tif_icmplt ")
+                        .append(labelTrue)
+                        .append("\n\ticonst_0\n")
+                        .append("\tgoto ")
+                        .append(labelContinue).append("\n")
+                        .append(labelTrue).append(":\n")
+                        .append("\ticonst_1\n")
+                        .append(labelContinue).append(":\n");
+                break;
+            case GTE: case GTEI32:
+                labelTrue = "Label_" + this.operatorLabel++;
+                labelContinue = "Label_" + this.operatorLabel++;
+
+                binaryOpInstruction.append(pushElement(leftOperand))
+                        .append(pushElement(rightOperand))
+                        .append("\tif_icmpge ")
+                        .append(labelTrue)
+                        .append("\n\ticonst_0\n")
+                        .append("\tgoto ")
+                        .append(labelContinue).append("\n")
+                        .append(labelTrue).append(":\n")
+                        .append("\ticonst_1\n")
+                        .append(labelContinue).append(":\n");
                 break;
             case ADD: case ADDI32:
                 binaryOpInstruction.append(pushElement(leftOperand))
@@ -231,8 +311,8 @@ public class Jasmin {
 
     private String buildReturnInstruction(ReturnInstruction instruction) {
         StringBuilder returnInstruction = new StringBuilder();
-        if (!instruction.hasReturnValue())
-            return "\treturn\n";
+
+        if (!instruction.hasReturnValue()) return "";
 
         Element operand = instruction.getOperand();
         String returnType = (operand.getType().getTypeOfElement() == ElementType.INT32
@@ -284,7 +364,43 @@ public class Jasmin {
 
 
     private String buildBranchInstruction(CondBranchInstruction instruction) {
-        return "";
+        StringBuilder condBranchInstruction = new StringBuilder();
+
+        BinaryOpInstruction condition= ((BinaryOpInstruction)instruction.getCondition());
+        if(condition.getOperation().getOpType() == OperationType.ANDB){
+            return "";
+        }
+
+        Element leftOperand = condition.getLeftOperand();
+        Element rightOperand = condition.getRightOperand();
+
+        condBranchInstruction.append(pushElement(leftOperand))
+                .append(pushElement(rightOperand))
+                .append("\t");
+
+        switch (condition.getOperation().getOpType()){
+            case GTE: case GTEI32:
+                condBranchInstruction.append("if_icmpge ");
+                break;
+            case LTH: case LTHI32:
+                condBranchInstruction.append("if_icmplt ");
+                break;
+            case EQ: case EQI32:
+                condBranchInstruction.append("if_icmpeq ");
+                break;
+            case NOTB: case NEQ: case NEQI32:
+                condBranchInstruction.append("if_icmpne ");
+                break;
+            default:
+                throw new NotImplementedException("Operation Not Implemented: "
+                        + condition.getOperation().getOpType());
+        }
+
+        condBranchInstruction.append(instruction.getLabel())
+                             .append("\n");
+
+        return condBranchInstruction.toString();
+
     }
 
     private String buildGoToInstruction(GotoInstruction instruction) {
@@ -298,20 +414,23 @@ public class Jasmin {
         Type destType = operand.getType();
         Descriptor destVariable = this.variableTable.get(operand.getName());
 
-        // Increment Assignment TODO TEST
+        // Increment Assignment
        if(instruction.getRhs().getInstType() == InstructionType.BINARYOPER){
             BinaryOpInstruction binaryOperation = (BinaryOpInstruction) instruction.getRhs();
-            Operand leftOperand = (Operand) binaryOperation.getLeftOperand();
-            Operand rightOperand = (Operand) binaryOperation.getRightOperand();
 
             if(binaryOperation.getOperation().getOpType() == OperationType.ADD
                 || binaryOperation.getOperation().getOpType() == OperationType.SUB){
+
+                Operand leftOperand = binaryOperation.getLeftOperand().isLiteral() ?
+                        null : (Operand) binaryOperation.getLeftOperand();
+                Operand rightOperand = binaryOperation.getRightOperand().isLiteral() ?
+                        null : (Operand) binaryOperation.getRightOperand();
+
                 String operationSign = binaryOperation.getOperation().getOpType() == OperationType.ADD ? "" : "-";
 
-                if(!leftOperand.isLiteral() && leftOperand.getName().equals(operand.getName())
-                        && rightOperand.isLiteral()){
+                if(leftOperand != null && leftOperand.getName().equals(operand.getName()) && rightOperand == null){
                     String leftValue = operationSign +
-                            ((LiteralElement) binaryOperation.getLeftOperand()).getLiteral();
+                            ((LiteralElement) binaryOperation.getRightOperand()).getLiteral();
 
                     if(Integer.parseInt(leftValue) >= -128 && Integer.parseInt(leftValue) <= 127){
                         assignInstruction.append("\tiinc ")
@@ -323,8 +442,7 @@ public class Jasmin {
 
                 }
 
-                else if(!rightOperand.isLiteral() && (rightOperand).getName().equals(operand.getName())
-                        && leftOperand.isLiteral()){
+                else if(rightOperand != null &&  rightOperand.getName().equals(operand.getName()) && leftOperand == null){
                     String rightValue = operationSign +
                             ((LiteralElement) binaryOperation.getLeftOperand()).getLiteral();
 
@@ -351,7 +469,7 @@ public class Jasmin {
             // Arrays with other dest types are stored as "astore"
             if(destType.getTypeOfElement() == ElementType.INT32 || destType.getTypeOfElement() == ElementType.BOOLEAN){
                 assignInstruction.append(buildMethodInstructions(instruction.getRhs()))
-                        .append("\tiastore");
+                        .append("\tiastore\n");
                 return assignInstruction.toString();
             }
         }
@@ -508,25 +626,25 @@ public class Jasmin {
 
     private String pushLiteral(LiteralElement element) {
         StringBuilder literalElement = new StringBuilder("\t");
-        int literal = Integer.parseInt(element.getLiteral());
 
         switch (element.getType().getTypeOfElement()){
             case INT32: case BOOLEAN:
+                int literal = Integer.parseInt(element.getLiteral());
                 if(literal == -1)
                     literalElement.append("iconst_m1\n");
                 else if (literal >= 0 && literal <= 5)
                     literalElement.append("iconst_").append(literal).append("\n");
                 else if (literal >= -128 && literal <= 127)
                     literalElement.append("bipush ").append(literal).append("\n");
-                else if (literal > 127)
+                else if (literal >= -32768 && literal <= 32767)
                     literalElement.append("sipush ").append(literal).append("\n");
-                else
+                else {
                     literalElement.append("ldc ").append(literal).append("\n");
+                }
                 break;
             default:
-                literalElement.append("ldc ").append(literal).append("\n");
+                literalElement.append("ldc ").append(element.getLiteral()).append("\n");
         }
-
         return literalElement.toString();
     }
 }
