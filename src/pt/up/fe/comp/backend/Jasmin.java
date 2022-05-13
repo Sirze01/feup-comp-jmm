@@ -189,7 +189,44 @@ public class Jasmin {
     }
 
     private String buildBinaryOperatorInstruction(BinaryOpInstruction instruction) {
-        return "";
+        StringBuilder binaryOpInstruction = new StringBuilder();
+
+        Element leftOperand = instruction.getLeftOperand();
+        Element rightOperand = instruction.getRightOperand();
+
+        switch(instruction.getOperation().getOpType()){
+            case AND: case ANDB: case ANDI32:
+                binaryOpInstruction.append(pushElement(leftOperand));
+                break;
+            case NOT: case NOTB:
+                break;
+            case LTH: case LTHI32:
+                break;
+            case ADD: case ADDI32:
+                binaryOpInstruction.append(pushElement(leftOperand))
+                        .append(pushElement(rightOperand))
+                        .append("\tiadd\n");
+                break;
+            case MUL: case MULI32:
+                binaryOpInstruction.append(pushElement(leftOperand))
+                        .append(pushElement(rightOperand))
+                        .append("\timul\n");
+                break;
+            case DIV: case DIVI32:
+                binaryOpInstruction.append(pushElement(leftOperand))
+                        .append(pushElement(rightOperand))
+                        .append("\tidiv\n");
+                break;
+            case SUB: case SUBI32:
+                binaryOpInstruction.append(pushElement(leftOperand))
+                        .append(pushElement(rightOperand))
+                        .append("\tisub\n");
+                break;
+            default:
+                throw new NotImplementedException(instruction.getOperation().getOpType());
+        }
+
+        return binaryOpInstruction.toString();
     }
 
     private String buildReturnInstruction(ReturnInstruction instruction) {
@@ -251,7 +288,7 @@ public class Jasmin {
     }
 
     private String buildGoToInstruction(GotoInstruction instruction) {
-        return "";
+        return "\tgoto " + instruction.getLabel() + "\n";
     }
 
     private String buildAssignInstruction(AssignInstruction instruction) {
@@ -262,7 +299,7 @@ public class Jasmin {
         Descriptor destVariable = this.variableTable.get(operand.getName());
 
         // Increment Assignment TODO TEST
-       /*if(instruction.getRhs().getInstType() == InstructionType.BINARYOPER){
+       if(instruction.getRhs().getInstType() == InstructionType.BINARYOPER){
             BinaryOpInstruction binaryOperation = (BinaryOpInstruction) instruction.getRhs();
             Element leftOperand = binaryOperation.getLeftOperand();
             Element rightOperand = binaryOperation.getRightOperand();
@@ -301,9 +338,9 @@ public class Jasmin {
                 }
             }
 
-        }*/
+        }
 
-        // Array Assignment TODO TEST
+        // Array Assignment (Needs Testing - Next Checkpoint)
         if(destVariable.getVarType().getTypeOfElement() == ElementType.ARRAYREF
                 && destType.getTypeOfElement() != ElementType.ARRAYREF){
             System.out.println("In Array Assignment");
