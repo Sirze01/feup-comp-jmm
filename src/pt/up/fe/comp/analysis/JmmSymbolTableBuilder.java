@@ -46,9 +46,17 @@ public class JmmSymbolTableBuilder extends PreorderJmmVisitor<JmmSymbolTable, Bo
         symbolTable.setClassName(className);
 
         for (JmmNode node : classNode.getChildren()) {
+
+            System.out.println("--Class Declaration--\n");
+            System.out.println(" Node:\n  " + node);
+            System.out.println("---------");
+            System.out.println("  Tree:\n   " + node.toTree());
+            System.out.println("  Kind:\n   " + node.getKind());
+            System.out.println("---------\n");
+
+
             if (Objects.equals(node.getKind(), "VarDeclaration")) {
                 String varName = node.getJmmChild(1).get("name");
-
                 if (symbolTable.getFieldsMap().containsKey(varName)) {
                     reports.add(new Report(ReportType.ERROR, Stage.SEMANTIC, Integer.parseInt(node.get("line")), Integer.parseInt(node.get("column")), "Variable already defined in this scope. Last definition: " + symbolTable.getFieldsMap().get(varName)));
                     continue;
@@ -61,8 +69,10 @@ public class JmmSymbolTableBuilder extends PreorderJmmVisitor<JmmSymbolTable, Bo
                 symbolTable.addField(symbol);
             }
 
+
         }
         return true;
+
     }
 
     private Boolean inheritanceDeclarationVisit(JmmNode inheritanceNode, JmmSymbolTable symbolTable) {
@@ -70,7 +80,8 @@ public class JmmSymbolTableBuilder extends PreorderJmmVisitor<JmmSymbolTable, Bo
         return true;
     }
 
-    private void addLocalVars(JmmNode methodBody, JmmSymbolTable symbolTable, JmmMethod method) {
+    private void addLocalVars(JmmNode methodBody, JmmMethod method) {
+
         for (JmmNode child : methodBody.getChildren()) {
             if (Objects.equals(child.getKind(), "VarDeclaration")) {
                 Symbol s = new Symbol(AstUtils.getNodeType(child.getJmmChild(0)), child.getJmmChild(1).get("name"));
@@ -78,6 +89,42 @@ public class JmmSymbolTableBuilder extends PreorderJmmVisitor<JmmSymbolTable, Bo
 
                 if (se != null) {
                     reports.add(new Report(ReportType.ERROR, Stage.SEMANTIC, Integer.parseInt(child.get("line")), Integer.parseInt(child.get("column")), "Variable already defined in this scope. Last definition: " + se));
+                }/*
+                else{
+                    Type type = AstUtils.getNodeType(child.getJmmChild(0));
+
+                    Symbol symbol = new Symbol(type, varName);
+
+                    symbolTable.addField(symbol);
+                }*/
+            }
+        }
+    }
+
+    private void addAssignments(JmmNode methodBody, JmmSymbolTable symbolTable, JmmMethod method){
+
+        for (JmmNode child : methodBody.getChildren()) {
+            if (Objects.equals(child.getKind(), "IDAssignment")) {
+                String varName = child.getJmmChild(0).get("name");
+
+                if (child.getJmmChild(1).getAttributes().contains("type")){
+                    if (!Objects.equals(child.getJmmChild(1).get("type"), method.getVars().get(0).getType().getName())){
+                        reports.add(new Report(ReportType.ERROR, Stage.SEMANTIC, Integer.parseInt(child.get("line")), Integer.parseInt(child.get("column")), "Assigned variable '" + varName  + "' with different type value"));
+                    }
+                    else{
+                        String assignedVarName = child.getJmmChild(1).get("name");
+
+                        Type type = AstUtils.getNodeType(child.getJmmChild(0));
+
+                        Symbol symbol = new Symbol(type, assignedVarName);
+
+                        symbolTable.addField(symbol);
+                    }
+                }
+                else {
+                    String assignedVarName = child.getJmmChild(1).get("name");
+                    reports.add(new Report(ReportType.ERROR, Stage.SEMANTIC, Integer.parseInt(child.get("line")), Integer.parseInt(child.get("column")), "Assigned undefined variable '" + assignedVarName + "'"));
+
                 }
             }
         }
@@ -88,13 +135,15 @@ public class JmmSymbolTableBuilder extends PreorderJmmVisitor<JmmSymbolTable, Bo
 
         JmmMethod method = new JmmMethod("main", new Type("void", false), List.of(new Symbol(new Type("String", true), parameterName)));
         JmmMethod e = symbolTable.addMethod(method);
+
         if (e != null) {
             reports.add(new Report(ReportType.ERROR, Stage.SEMANTIC, Integer.parseInt(methodNode.get("line")), Integer.parseInt(methodNode.get("column")), "Main method already defined. Last definition: " + e));
             return false;
         }
 
         JmmNode methodBody = methodNode.getJmmChild(2);
-        addLocalVars(methodBody, symbolTable, method);
+        addLocalVars(methodBody, method);
+        addAssignments(methodBody, symbolTable, method);
 
         return true;
     }
@@ -113,12 +162,13 @@ public class JmmSymbolTableBuilder extends PreorderJmmVisitor<JmmSymbolTable, Bo
 
         JmmMethod method = new JmmMethod(methodName, methodType, parameters);
         JmmMethod e = symbolTable.addMethod(method);
+
         if (e != null) {
             reports.add(new Report(ReportType.ERROR, Stage.SEMANTIC, Integer.parseInt(methodNode.get("line")), Integer.parseInt(methodNode.get("column")), "Method already defined. Last definition: " + e));
         }
-
         JmmNode methodBody = methodNode.getJmmChild(2);
-        addLocalVars(methodBody, symbolTable, method);
+        addLocalVars(methodBody, method);
+        addAssignments(methodBody, symbolTable, method);
 
         return true;
     }
