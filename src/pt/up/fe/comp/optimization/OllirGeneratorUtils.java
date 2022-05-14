@@ -3,6 +3,7 @@ package pt.up.fe.comp.optimization;
 import pt.up.fe.comp.analysis.JmmMethod;
 import pt.up.fe.comp.analysis.JmmSymbolTable;
 import pt.up.fe.comp.jmm.analysis.table.Symbol;
+import pt.up.fe.comp.jmm.analysis.table.SymbolTable;
 import pt.up.fe.comp.jmm.analysis.table.Type;
 import pt.up.fe.comp.jmm.ast.JmmNode;
 
@@ -37,6 +38,14 @@ public abstract class OllirGeneratorUtils {
         return toOllirType(type.getName(), type.isArray());
     }
 
+    public static String toOllirType(String type){
+        if(type.equals("IntArray")){
+            return toOllirType("Int", true);
+        }
+
+        return type.contains("[") ? toOllirType(type, true) : toOllirType(type, false) ;
+    }
+
     public static String getCode(Symbol symbol) {
         return symbol.getName() + "." + OllirGeneratorUtils.toOllirType(symbol.getType());
     }
@@ -47,7 +56,29 @@ public abstract class OllirGeneratorUtils {
         return method.getName() + "(" + params + ")." + toOllirType(method.getReturnType());
     }
 
-    public static String getCodeLiteral(JmmNode literalNode){
+    public static String getCodeLiteral(SymbolTable symbolTable, JmmNode literalNode) {
+        if (literalNode.get("value").equals("this")) {
+            return "$0.this." + symbolTable.getClassName();
+        }
         return literalNode.get("value") + "." + toOllirType(literalNode.get("type"), false);
+    }
+
+    public static String getTypeFromOllirVar(String ollirVar){
+        StringBuilder opType = new StringBuilder();
+        String[] split = ollirVar.split("\\.");
+        for (int i = 0; i < split.length; i++) {
+            if (split[i].contains("$")) {
+                i++;
+                continue;
+            }
+
+            if (i == 0) {
+                continue;
+            }
+
+            opType.append(split[i]);
+        }
+
+        return opType.toString();
     }
 }

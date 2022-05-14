@@ -17,4 +17,15 @@ public abstract class AstUtils {
 
         return type;
     }
+
+    public static JmmNode getFirstDescendantOfKind(JmmNode node, String kind){
+        for(JmmNode child : node.getChildren()){
+            if(child.getKind().equals(kind)){
+                return child;
+            }
+            return getFirstDescendantOfKind(child, kind);
+        }
+
+        return null;
+    }
 }

@@ -13,7 +13,6 @@ import pt.up.fe.comp.jmm.report.Report;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 
 public class OllirGenerator extends AJmmVisitor<Boolean, Boolean> {
     private final SymbolTable symbolTable;
@@ -22,9 +21,12 @@ public class OllirGenerator extends AJmmVisitor<Boolean, Boolean> {
     private final Map<String, String> config;
 
     private int indent = 0;
+    private int[] tempCount ={ 0 };
 
-    private int getNumSpaces() {
-        return OllirGeneratorUtils.getNumSpaces(config);
+    private String currentMethodSignature = null;
+
+    private int getNumSpaces(int indent) {
+        return indent * OllirGeneratorUtils.getNumSpaces(config);
     }
 
     OllirGenerator(SymbolTable symbolTable) {
@@ -44,8 +46,8 @@ public class OllirGenerator extends AJmmVisitor<Boolean, Boolean> {
         addVisit("ClassDeclaration", this::classDeclarationVisit);
         addVisit("MainMethod", this::mainMethodVisit);
         addVisit("InstanceMethod", this::instanceMethodVisit);
+        addVisit("Statement", this::statementVisit);
         addVisit("ReturnExpression", this::returnExpressionVisit);
-        addVisit("Literal", this::literalVisit);
     }
 
     public String getCode() {
@@ -79,7 +81,7 @@ public class OllirGenerator extends AJmmVisitor<Boolean, Boolean> {
         indent++;
 
         for (Symbol field : symbolTable.getFields()) {
-            code.append(" ".repeat(indent * getNumSpaces()));
+            code.append(" ".repeat(getNumSpaces(indent)));
             code.append(".field ");
             code.append(OllirGeneratorUtils.getCode(field));
             code.append(";\n");
@@ -93,7 +95,7 @@ public class OllirGenerator extends AJmmVisitor<Boolean, Boolean> {
         }
 
         indent--;
-        code.append(" ".repeat(indent * getNumSpaces()));
+        code.append(" ".repeat(getNumSpaces(indent)));
         code.append("}");
         return true;
     }
@@ -101,7 +103,7 @@ public class OllirGenerator extends AJmmVisitor<Boolean, Boolean> {
     private Boolean mainMethodVisit(JmmNode mainNode, Boolean dummy) {
         String mainSignature = new JmmMethod("main", new Type("void", false), List.of(new Symbol(new Type("String", true), null))).toString();
 
-        code.append(" ".repeat(indent * getNumSpaces()));
+        code.append(" ".repeat(getNumSpaces(indent)));
         code.append(".method public static ");
         methodScopeVisit(mainNode, mainSignature);
 
@@ -111,7 +113,7 @@ public class OllirGenerator extends AJmmVisitor<Boolean, Boolean> {
     private Boolean instanceMethodVisit(JmmNode methodNode, Boolean dummy) {
         String methodSignature = JmmSymbolTableBuilder.generateMethod(methodNode).toString();
 
-        code.append(" ".repeat(indent * getNumSpaces()));
+        code.append(" ".repeat(getNumSpaces(indent)));
         code.append(".method public ");
         methodScopeVisit(methodNode, methodSignature);
 
@@ -120,36 +122,38 @@ public class OllirGenerator extends AJmmVisitor<Boolean, Boolean> {
 
     private void methodScopeVisit(JmmNode methodNode, String methodSignature) {
         code.append(OllirGeneratorUtils.getMethodHeader(((JmmSymbolTable) symbolTable), methodSignature));
+        currentMethodSignature = methodSignature;
         code.append(" {\n");
         indent++;
 
-
-        if (!Objects.equals(symbolTable.getReturnType(methodSignature), new Type("void", false))) {
-            JmmNode returnNode = methodNode.getJmmChild(methodNode.getNumChildren() - 1);
-
-            code.append(" ".repeat(indent * getNumSpaces()));
-            code.append("ret.").append(OllirGeneratorUtils.toOllirType(symbolTable.getReturnType(methodSignature))).append(" ");
-
-            visit(returnNode);
-
-            code.append(";\n");
+        for (JmmNode child : methodNode.getJmmChild(2).getChildren()){
+            visit(child);
         }
+
+        if(!symbolTable.getReturnType(methodSignature).getName().equals("void")) {
+            visit(methodNode.getJmmChild(methodNode.getNumChildren() - 1));
+        }
+
         indent--;
-        code.append(" ".repeat(indent * getNumSpaces()));
+        code.append(" ".repeat(getNumSpaces(indent)));
         code.append("}\n");
+        currentMethodSignature = null;
+        tempCount[0] = 0;
     }
 
-    private Boolean returnExpressionVisit (JmmNode returnNode, Boolean dummy){
-        visit(returnNode.getJmmChild(0));
+    private Boolean statementVisit (JmmNode statementNode, Boolean dummy){
+        OllirExpressionGenerator expressionGenerator = new OllirExpressionGenerator(reports, symbolTable, indent, tempCount, currentMethodSignature);
+        expressionGenerator.visit(statementNode, null);
+
+        code.append(expressionGenerator.getCode());
         return true;
     }
 
-    private Boolean literalVisit (JmmNode literalNode, Boolean dummy){
-        // ToDo: Handle return this
-        if(Objects.equals(literalNode.get("value"), "this")){
-            return true;
-        }
-        code.append(OllirGeneratorUtils.getCodeLiteral(literalNode));
+    private Boolean returnExpressionVisit (JmmNode returnNode, Boolean dummy){
+        OllirExpressionGenerator expressionGenerator = new OllirExpressionGenerator(reports, symbolTable, indent, tempCount, currentMethodSignature);
+        expressionGenerator.visit(returnNode, null);
+
+        code.append(expressionGenerator.getCode());
         return true;
     }
 }
