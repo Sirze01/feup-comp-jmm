@@ -1,4 +1,4 @@
-
+package pt.up.fe.comp;
 /**
  * Copyright 2021 SPeCS.
  * 
@@ -12,14 +12,29 @@
  * specific language governing permissions and limitations under the License. under the License.
  */
 
+import static org.junit.Assert.assertEquals;
+
+import org.junit.Test;
+
 import pt.up.fe.comp.TestUtils;
 import pt.up.fe.specs.util.SpecsIo;
+import pt.up.fe.specs.util.SpecsStrings;
 
-public class OptimizeTest {
+public class BackendTest {
 
     // @Test
+    // public void testHelloWorld() {
+    // var result = TestUtils.backend(SpecsIo.getResource("fixtures/public/HelloWorld.jmm"));
+    // TestUtils.noErrors(result.getReports());
+    // var output = result.run();
+    // assertEquals("Hello, World!", output.trim());
+    // }
+
+    @Test
     public void testHelloWorld() {
-        var result = TestUtils.optimize(SpecsIo.getResource("fixtures/public/HelloWorld.jmm"));
-        TestUtils.noErrors(result.getReports());
+
+        String jasminCode = SpecsIo.getResource("fixtures/public/jasmin/HelloWorld.j");
+        var output = TestUtils.runJasmin(jasminCode);
+        assertEquals("Hello World!\nHello World Again!\n", SpecsStrings.normalizeFileContents(output));
     }
 }

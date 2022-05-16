@@ -1,0 +1,484 @@
+package pt.up.fe.comp.optimization;
+
+import pt.up.fe.comp.analysis.JmmMethod;
+import pt.up.fe.comp.analysis.JmmSymbolTable;
+import pt.up.fe.comp.ast.AstUtils;
+import pt.up.fe.comp.jmm.analysis.table.Symbol;
+import pt.up.fe.comp.jmm.analysis.table.SymbolTable;
+import pt.up.fe.comp.jmm.analysis.table.Type;
+import pt.up.fe.comp.jmm.ast.AJmmVisitor;
+import pt.up.fe.comp.jmm.ast.JmmNode;
+import pt.up.fe.comp.jmm.report.Report;
+
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
+public class OllirExpressionGenerator extends AJmmVisitor<Boolean, String> {
+    private final List<Report> reports;
+    private final SymbolTable symbolTable;
+    private final String methodSignature;
+    private final Map<String, String> config;
+
+    private int indent;
+    private int[] tempCount;
+    private int stmtDepth = 0;
+
+    private final StringBuilder code = new StringBuilder();
+
+    private int getNumSpaces(int indent) {
+        return indent * OllirGeneratorUtils.getNumSpaces(config);
+    }
+
+    OllirExpressionGenerator(List<Report> reports, SymbolTable symbolTable, int indent, int[] tempCount, String methodSignature) {
+        this.reports = reports;
+        this.symbolTable = symbolTable;
+        this.indent = indent;
+        this.tempCount = tempCount;
+        this.methodSignature = methodSignature;
+        this.config = null;
+
+        addVisits();
+    }
+
+    OllirExpressionGenerator(Map<String, String> config, List<Report> reports, SymbolTable symbolTable, int indent, int[] tempCount, String methodSignature) {
+        this.reports = reports;
+        this.symbolTable = symbolTable;
+        this.indent = indent;
+        this.tempCount = tempCount;
+        this.methodSignature = methodSignature;
+        this.config = config;
+
+        addVisits();
+    }
+
+    private void addVisits() {
+        addVisit("Statement", this::statementVisit);
+        addVisit("ReturnExpression", this::returnExpressionVisit);
+        addVisit("IDAssignment", this::idAssignmentVisit);
+        addVisit("ArrayAssignment", this::arrayAssignmentVisit);
+        addVisit("IfStatement", this::ifStatementVisit);
+        addVisit("WhileStatement", this::whileStatementVisit);
+        addVisit("ScopeStatement", this::scopeStatementVisit);
+
+        addVisit("ParenthesisExpression", this::parenthesisVisit);
+
+        addVisit("BinOp", this::binOpVisit);
+        addVisit("UnaryOp", this::unaryOpVisit);
+
+        addVisit("ArrayExpression", this::arrayExpressionVisit);
+        addVisit("AccessExpression", this::accessVisit);
+        addVisit("Literal", this::literalVisit);
+        addVisit("ID", this::idVisit);
+        addVisit("_New", this::newVisit);
+
+        setDefaultVisit(this::defaultVisit);
+    }
+
+    private String generateTmp(String type) {
+        return "tmp" + tempCount[0]++ + "." + OllirGeneratorUtils.toOllirType(type);
+    }
+
+    private String generateTmp(Type type) {
+        return "tmp" + tempCount[0]++ + "." + OllirGeneratorUtils.toOllirType(type);
+    }
+
+    public String getCode() {
+        return code.toString();
+    }
+
+    private String defaultVisit(JmmNode node, Boolean dummy) {
+        return "";
+    }
+
+    private String returnExpressionVisit(JmmNode returnNode, Boolean dummy) {
+        StringBuilder before = new StringBuilder();
+        StringBuilder returnExpression = new StringBuilder();
+
+        returnExpression.append(" ".repeat(getNumSpaces(indent)));
+        returnExpression.append("ret.").append(OllirGeneratorUtils.toOllirType(symbolTable.getReturnType(methodSignature))).append(" ");
+
+        if(returnNode.getJmmChild(0).getKind().equals("BinOp") || returnNode.getJmmChild(0).getKind().equals("UnaryOp")){
+            String tmp = generateTmp(symbolTable.getReturnType(methodSignature));
+            before.append(" ".repeat(getNumSpaces(indent)));
+            before.append(tmp);
+            before.append(" :=." + OllirGeneratorUtils.toOllirType(symbolTable.getReturnType(methodSignature)) + " ");
+            before.append(visit(returnNode.getJmmChild(0)));
+            before.append(";\n");
+
+            returnExpression.append(tmp);
+        }else{
+            returnExpression.append(visit(returnNode.getJmmChild(0)));
+
+        }
+
+        returnExpression.append(";\n");
+        code.append(before);
+        code.append(returnExpression);
+        return returnExpression.toString();
+    }
+
+    private String statementVisit(JmmNode statementNode, Boolean dummy) {
+        stmtDepth++;
+        StringBuilder statement = new StringBuilder();
+
+        statement.append(visit(statementNode.getJmmChild(0)));
+
+        stmtDepth--;
+        if (stmtDepth == 0) {
+            code.append(statement);
+        }
+
+        return statement.toString();
+    }
+
+    private String idAssignmentVisit(JmmNode assignmentNode, Boolean dummy) {
+        StringBuilder assignmentStmt = new StringBuilder();
+
+        Symbol s = ((JmmSymbolTable) symbolTable).getLocalVar(methodSignature, assignmentNode.getJmmChild(0).get("name"));
+
+        assignmentStmt.append(" ".repeat(getNumSpaces(indent)));
+        assignmentStmt.append(s.getName() + "." + OllirGeneratorUtils.toOllirType(s.getType()));
+        assignmentStmt.append(" :=." + OllirGeneratorUtils.toOllirType(s.getType()) + " ");
+        assignmentStmt.append(visit(assignmentNode.getJmmChild(1)));
+        assignmentStmt.append(";\n");
+
+        return assignmentStmt.toString();
+    }
+
+    private String arrayAssignmentVisit(JmmNode assignmentNode, Boolean dummy) {
+        StringBuilder before = new StringBuilder();
+        StringBuilder assignmentStmt = new StringBuilder();
+
+        Symbol s = ((JmmSymbolTable) symbolTable).getLocalVar(methodSignature, assignmentNode.getJmmChild(0).get("name"));
+        String idx = "tmp" + tempCount[0]++ + ".i32";
+        before.append(" ".repeat(getNumSpaces(indent)));
+        before.append(idx + " :=.i32 " + visit(assignmentNode.getJmmChild(1).getJmmChild(0)) + ";\n");
+
+        assignmentStmt.append(" ".repeat(getNumSpaces(indent)));
+        assignmentStmt.append(s.getName() + "[" + idx + "].");
+        assignmentStmt.append(OllirGeneratorUtils.toOllirType(s.getType().getName()));
+        assignmentStmt.append(" :=." + OllirGeneratorUtils.toOllirType(s.getType().getName()) + " ");
+        assignmentStmt.append(visit(assignmentNode.getJmmChild(2)));
+        assignmentStmt.append(";\n");
+
+        code.append(before);
+        return assignmentStmt.toString();
+    }
+
+
+    private String binOpVisit(JmmNode binOpNode, Boolean dummy) {
+        StringBuilder before = new StringBuilder();
+        StringBuilder binOpStmt = new StringBuilder();
+
+        String[] op = {"", ""};
+        for (int i = 0; i < 2; i++) {
+            if (!(binOpNode.getJmmChild(i).getKind().equals("BinOp") ||
+                    binOpNode.getJmmChild(i).getKind().equals("AccessExpression") ||
+                    binOpNode.getJmmChild(i).getKind().equals("CallExpression") ||
+                    binOpNode.getJmmChild(i).getKind().equals("UnaryOp"))) {
+                op[i] = visit(binOpNode.getJmmChild(i));
+                continue;
+            }
+
+
+            JmmNode child = AstUtils.getFirstOfKind(binOpNode.getJmmChild(i), "Literal");
+            String type = "";
+            if (child != null) {
+                type = OllirGeneratorUtils.toOllirType(child.get("type"));
+            } else {
+                child = AstUtils.getFirstOfKind(binOpNode.getJmmChild(i), "ID");
+                Symbol s = ((JmmSymbolTable) symbolTable).getLocalVar(methodSignature, child.get("name"));
+                if (s == null) {
+                    s = ((JmmSymbolTable) symbolTable).getParameter(methodSignature, child.get("name"));
+                }
+                type = OllirGeneratorUtils.toOllirType(s.getType().getName());
+            }
+            op[i] = generateTmp(type);
+
+
+            before.append(" ".repeat(getNumSpaces(indent)));
+            before.append(op[i] + " :=." + type + " " + visit(binOpNode.getJmmChild(i)) + ";\n");
+        }
+
+
+        String opType = OllirGeneratorUtils.getTypeFromOllirVar(op[0]);
+        binOpStmt.append(op[0]);
+        switch (binOpNode.get("op")) {
+            case "And" -> binOpStmt.append(" &&.")
+                    .append(opType);
+            case "Less" -> binOpStmt.append(" <.")
+                    .append(opType);
+            case "Add" -> binOpStmt.append(" +.")
+                    .append(opType);
+            case "Sub" -> binOpStmt.append(" -.")
+                    .append(opType);
+            case "Mult" -> binOpStmt.append(" *.")
+                    .append(opType);
+            case "Div" -> binOpStmt.append(" /.")
+                    .append(opType);
+            default -> {
+            }
+        }
+        binOpStmt.append(" " + op[1]);
+
+        code.append(before);
+        return binOpStmt.toString();
+    }
+
+    private String unaryOpVisit(JmmNode unaryNode, Boolean dummy) {
+        StringBuilder before = new StringBuilder();
+        StringBuilder unaryOpStmt = new StringBuilder();
+
+        String op;
+
+        if (!(unaryNode.getJmmChild(0).getKind().equals("BinOp") ||
+                unaryNode.getJmmChild(0).getKind().equals("AccessExpression") ||
+                unaryNode.getJmmChild(0).getKind().equals("CallExpression"))) {
+            op = visit(unaryNode.getJmmChild(0));
+        } else {
+            JmmNode child = AstUtils.getFirstOfKind(unaryNode, "Literal");
+            String type = "";
+            if (child != null) {
+                type = OllirGeneratorUtils.toOllirType(child.get("type"));
+            } else {
+                child = AstUtils.getFirstOfKind(unaryNode.getJmmChild(0), "ID");
+                Symbol s = ((JmmSymbolTable) symbolTable).getLocalVar(methodSignature, child.get("name"));
+                if (s == null) {
+                    s = ((JmmSymbolTable) symbolTable).getParameter(methodSignature, child.get("name"));
+                }
+                type = OllirGeneratorUtils.toOllirType(s.getType());
+            }
+            op = generateTmp(type);
+
+
+            before.append(" ".repeat(getNumSpaces(indent)));
+            before.append(op + " :=." + type + " " + visit(unaryNode.getJmmChild(0)) + ";\n");
+        }
+
+        String opType = OllirGeneratorUtils.getTypeFromOllirVar(op);
+        switch (unaryNode.get("op")) {
+            case "Not" -> unaryOpStmt.append("!.")
+                    .append(opType);
+            default -> {
+            }
+        }
+        unaryOpStmt.append(" " + op);
+
+        code.append(before);
+        return unaryOpStmt.toString();
+    }
+
+    private String arrayExpressionVisit(JmmNode arrayNode, Boolean dummy) {
+        StringBuilder before = new StringBuilder();
+        StringBuilder arrayStmt = new StringBuilder();
+
+        String expResult;
+
+        JmmNode child = AstUtils.getFirstOfKind(arrayNode.getJmmChild(1), "Literal");
+        String type;
+        if (child != null) {
+            type = OllirGeneratorUtils.toOllirType(child.get("type"));
+        } else {
+            child = AstUtils.getFirstOfKind(arrayNode.getJmmChild(1), "ID");
+            Symbol s = ((JmmSymbolTable) symbolTable).getLocalVar(methodSignature, child.get("name"));
+            if (s == null) {
+                s = ((JmmSymbolTable) symbolTable).getParameter(methodSignature, child.get("name"));
+            }
+            type = OllirGeneratorUtils.toOllirType(s.getType());
+        }
+        expResult = generateTmp(type);
+
+        before.append(" ".repeat(getNumSpaces(indent)));
+        before.append(expResult + " :=." + type + " " + visit(arrayNode.getJmmChild(1)) + ";\n");
+
+        Symbol s = ((JmmSymbolTable) symbolTable).getLocalVar(methodSignature, arrayNode.getJmmChild(0).get("name"));
+        if (s == null) {
+            s = ((JmmSymbolTable) symbolTable).getParameter(methodSignature, arrayNode.getJmmChild(0).get("name"));
+        }
+
+        arrayStmt.append(s.getName() + "[")
+                .append(expResult)
+                .append("].")
+                .append(OllirGeneratorUtils.toOllirType(s.getType().getName()));
+
+        code.append(before);
+        return arrayStmt.toString();
+    }
+
+    private String accessVisit(JmmNode accessNode, Boolean dummy) {
+        if (accessNode.getNumChildren() == 1) {
+            return "arraylength(" + visit(accessNode.getJmmChild(0)) + ").i32";
+        }
+
+
+        List<String> methods = symbolTable.getMethods();
+        JmmMethod thisMethod = null;
+        for (String m : methods) {
+            JmmMethod method = ((JmmSymbolTable) symbolTable).getMethodObject(m);
+
+            if (method.getName().equals(accessNode.getJmmChild(1).getJmmChild(0).get("name"))) {
+                if (method.getParameters().size() == accessNode.getJmmChild(1).getJmmChild(1).getNumChildren() ) {
+                    thisMethod = method;
+                }
+            }
+        }
+
+
+        String parameters = accessNode.getJmmChild(1).getJmmChild(1).getChildren().isEmpty() ?
+                "" :
+                ", " + accessNode.getJmmChild(1).getJmmChild(1).getChildren().stream()
+                        .map(this::visit).collect(Collectors.joining(", "));
+
+        if (thisMethod == null) {
+            return " ".repeat(getNumSpaces(indent)) + "invokestatic(" + accessNode.getJmmChild(0).get("name") + ", \"" + accessNode.getJmmChild(1).getJmmChild(0).get("name") + "\"" + parameters + ").V;\n";
+        }
+
+        String type = OllirGeneratorUtils.toOllirType(thisMethod.getReturnType());
+        Symbol s = ((JmmSymbolTable) symbolTable).getLocalVar(methodSignature, accessNode.getJmmChild(0).get("name"));
+
+        if (s == null){
+            for (Symbol parameter : symbolTable.getParameters(methodSignature)){
+                if (parameter.getName().equals(accessNode.getJmmChild(0).get("name"))){
+                    s = parameter;
+                }
+            }
+        }
+
+        assert s != null;
+        return " ".repeat(getNumSpaces(indent)) + "invokevirtual(" + OllirGeneratorUtils.getCode(s) + ", \"" + accessNode.getJmmChild(1).getJmmChild(0).get("name") + "\"" + parameters + ")." + type + ";\n";
+    }
+
+    private String parenthesisVisit(JmmNode parenthesisNode, Boolean dummy) {
+        return visit(parenthesisNode.getJmmChild(0));
+    }
+
+    private String scopeStatementVisit(JmmNode scopeNode, Boolean dummy) {
+        StringBuilder scopeStmt = new StringBuilder();
+
+        for (JmmNode child : scopeNode.getChildren()){
+            scopeStmt.append(visit(child));
+        }
+
+        return scopeStmt.toString();
+    }
+
+    private String ifStatementVisit(JmmNode ifNode, Boolean dummy) {
+        StringBuilder ifStmt = new StringBuilder();
+
+        String then = "Then" + tempCount[0]++;
+        String after = "After" + tempCount[0]++;
+        String tmp = generateTmp("Boolean");
+
+        ifStmt.append(" ".repeat(getNumSpaces(indent)));
+        ifStmt.append(tmp + " :=.bool " + visit(ifNode.getJmmChild(0).getJmmChild(0)) + ";\n");
+
+        ifStmt.append(" ".repeat(getNumSpaces(indent)));
+        ifStmt.append("if (" + tmp + ") goto " + then + ";\n");
+
+
+        ifStmt.append(visit(ifNode.getJmmChild(2).getJmmChild(0)));
+        ifStmt.append(" ".repeat(getNumSpaces(indent)));
+
+        ifStmt.append("goto " + after + ";\n");
+
+        ifStmt.append(" ".repeat(getNumSpaces(indent - 1)));
+        ifStmt.append(then + ":\n");
+        ifStmt.append(visit(ifNode.getJmmChild(1).getJmmChild(0)));
+        ifStmt.append(" ".repeat(getNumSpaces(indent - 1)));
+        ifStmt.append(after + ":\n");
+
+        return ifStmt.toString();
+    }
+
+    private String whileStatementVisit(JmmNode whileNode, Boolean dummy) {
+        StringBuilder whileStmt = new StringBuilder();
+
+        String loop = "Loop" + tempCount[0]++;
+        String body = "Body" + tempCount[0]++;
+        String end = "EndLoop" + tempCount[0]++;
+        String tmp = generateTmp("Boolean");
+
+        whileStmt.append(" ".repeat(getNumSpaces(indent - 1)));
+        whileStmt.append(loop + ":\n");
+        whileStmt.append(" ".repeat(getNumSpaces(indent)));
+        whileStmt.append(tmp + " :=.bool " + visit(whileNode.getJmmChild(0).getJmmChild(0)) + ";\n");
+        whileStmt.append(" ".repeat(getNumSpaces(indent)));
+        whileStmt.append("if (" + tmp + ") goto " + body + ";\n");
+        whileStmt.append(" ".repeat(getNumSpaces(indent)));
+        whileStmt.append("goto " + end + ";\n");
+        whileStmt.append(" ".repeat(getNumSpaces(indent - 1)));
+        whileStmt.append(body + ":\n");
+        whileStmt.append(visit(whileNode.getJmmChild(1).getJmmChild(0)));
+        whileStmt.append(" ".repeat(getNumSpaces(indent)));
+        whileStmt.append("goto " + loop + ";\n");
+        whileStmt.append(" ".repeat(getNumSpaces(indent - 1)));
+        whileStmt.append(end + ":\n");
+
+        return whileStmt.toString();
+    }
+
+    private String literalVisit(JmmNode literalNode, Boolean dummy) {
+        return OllirGeneratorUtils.getCodeLiteral(symbolTable, literalNode);
+    }
+
+    private String newVisit(JmmNode newNode, Boolean dummy) {
+        StringBuilder before = new StringBuilder();
+        StringBuilder newStmt = new StringBuilder();
+
+        if (newNode.get("type").equals("IntArray")) {
+            String tmp = generateTmp(newNode.getJmmChild(0).get("type"));
+
+            newStmt.append(tmp);
+
+            before.append(" ".repeat(getNumSpaces(indent)));
+            before.append(tmp)
+                    .append(" :=.")
+                    .append(OllirGeneratorUtils.toOllirType(newNode.get("type")));
+            before.append(" new(");
+            before.append("array, ");
+            before.append(visit(newNode.getJmmChild(0)));
+            before.append(").array.i32");
+            before.append(";\n");
+        } else {
+            String tmp = generateTmp(newNode.getJmmChild(0).get("type"));
+
+            newStmt.append(tmp);
+
+            before.append(" ".repeat(getNumSpaces(indent)));
+            before.append(tmp)
+                    .append(" :=.")
+                    .append(OllirGeneratorUtils.toOllirType(newNode.getJmmChild(0).get("type")));
+            before.append(" new(");
+            before.append(OllirGeneratorUtils.toOllirType(newNode.getJmmChild(0).get("type")));
+            before.append(").");
+            before.append(OllirGeneratorUtils.toOllirType(newNode.getJmmChild(0).get("type")));
+            before.append(";\n");
+
+            before.append(" ".repeat(getNumSpaces(indent)));
+            before.append("invokespecial(")
+                    .append(newStmt)
+                    .append(", \"<init>\").V;\n");
+        }
+
+        code.append(before);
+        return newStmt.toString();
+    }
+
+    private String idVisit(JmmNode idNode, Boolean dummy) {
+        Symbol s = ((JmmSymbolTable) symbolTable).getLocalVar(methodSignature, idNode.get("name"));
+        if (s == null) {
+            s = ((JmmSymbolTable) symbolTable).getParameter(methodSignature, idNode.get("name"));
+            assert s != null;
+            int idx = symbolTable.getParameters(methodSignature).indexOf(s);
+
+            if (JmmSymbolTable.isMain(methodSignature)) {
+                return "$" + idx + "." + idNode.get("name") + "." + OllirGeneratorUtils.toOllirType(s.getType());
+            }
+
+            return "$" + ++idx + "." + idNode.get("name") + "." + OllirGeneratorUtils.toOllirType(s.getType());
+        }
+
+        return idNode.get("name") + "." + OllirGeneratorUtils.toOllirType(s.getType());
+    }
+}

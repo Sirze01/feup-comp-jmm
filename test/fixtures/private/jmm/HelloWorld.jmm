@@ -1,0 +1,53 @@
+import ioPlus;
+
+class HelloWorld extends HelloClass{
+    int a;
+    int[] b;
+    boolean c;
+    String d;
+    Type e;
+
+	public static void main(String[] args) {
+	    int a;
+	    int[] b;
+        boolean c;
+        String d;
+        Type e;
+
+        a = 2;
+
+        b[2] = 4;
+
+	}
+
+	public int sayHello(String args) {
+	    int a;
+        ioPlus.printHelloWorld();
+        return 1;
+    }
+
+    public HelloWorld sayHello(Int nr, String args) {
+        int a;
+        a = 0;
+        while( a < 5 ){
+            a = a + 1;
+            ioPlus.printHelloWorld();
+        }
+        return this;
+    }
+
+    public int[] sayHello(Int nr, String args, String hello) {
+            int[] b;
+            int a;
+            a = 3;
+
+            if (a < 2){
+                b[0] = 2;
+            }
+            else{
+                b[0 + 2] = 3 + 2;
+            }
+
+            return new int[2];
+        }
+}
