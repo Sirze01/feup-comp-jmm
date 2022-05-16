@@ -9,6 +9,8 @@ import pt.up.fe.comp.jmm.analysis.table.Type;
 import pt.up.fe.comp.jmm.ast.AJmmVisitor;
 import pt.up.fe.comp.jmm.ast.JmmNode;
 import pt.up.fe.comp.jmm.report.Report;
+import pt.up.fe.comp.jmm.report.ReportType;
+import pt.up.fe.comp.jmm.report.Stage;
 
 import java.util.List;
 import java.util.Map;
@@ -137,6 +139,15 @@ public class OllirExpressionGenerator extends AJmmVisitor<Boolean, String> {
 
         Symbol s = ((JmmSymbolTable) symbolTable).getLocalVar(methodSignature, assignmentNode.getJmmChild(0).get("name"));
 
+        if (s == null){
+            s = symbolTable.getFields().stream().filter(field -> field.getName().equals(assignmentNode.getJmmChild(0).get("name"))).toList().get(0);
+
+            assignmentStmt.append(" ".repeat(getNumSpaces(indent)));
+            assignmentStmt.append("putfield(this, " + OllirGeneratorUtils.getCode(s) + ", " + visit(assignmentNode.getJmmChild(1)) + ").V;\n");
+
+            return assignmentStmt.toString();
+        }
+
         assignmentStmt.append(" ".repeat(getNumSpaces(indent)));
         assignmentStmt.append(s.getName() + "." + OllirGeneratorUtils.toOllirType(s.getType()));
         assignmentStmt.append(" :=." + OllirGeneratorUtils.toOllirType(s.getType()) + " ");
@@ -191,6 +202,10 @@ public class OllirExpressionGenerator extends AJmmVisitor<Boolean, String> {
                 Symbol s = ((JmmSymbolTable) symbolTable).getLocalVar(methodSignature, child.get("name"));
                 if (s == null) {
                     s = ((JmmSymbolTable) symbolTable).getParameter(methodSignature, child.get("name"));
+                    if (s == null){
+                        JmmNode finalChild = child;
+                        s = symbolTable.getFields().stream().filter(field -> field.getName().equals(finalChild.get("name"))).toList().get(0);
+                    }
                 }
                 type = OllirGeneratorUtils.toOllirType(s.getType().getName());
             }
@@ -246,6 +261,10 @@ public class OllirExpressionGenerator extends AJmmVisitor<Boolean, String> {
                 Symbol s = ((JmmSymbolTable) symbolTable).getLocalVar(methodSignature, child.get("name"));
                 if (s == null) {
                     s = ((JmmSymbolTable) symbolTable).getParameter(methodSignature, child.get("name"));
+                    if (s == null){
+                        JmmNode finalChild = child;
+                        s = symbolTable.getFields().stream().filter(field -> field.getName().equals(finalChild.get("name"))).toList().get(0);
+                    }
                 }
                 type = OllirGeneratorUtils.toOllirType(s.getType());
             }
@@ -284,6 +303,10 @@ public class OllirExpressionGenerator extends AJmmVisitor<Boolean, String> {
             Symbol s = ((JmmSymbolTable) symbolTable).getLocalVar(methodSignature, child.get("name"));
             if (s == null) {
                 s = ((JmmSymbolTable) symbolTable).getParameter(methodSignature, child.get("name"));
+                if (s == null){
+                    JmmNode finalChild = child;
+                    s = symbolTable.getFields().stream().filter(field -> field.getName().equals(finalChild.get("name"))).toList().get(0);
+                }
             }
             type = OllirGeneratorUtils.toOllirType(s.getType());
         }
@@ -469,16 +492,30 @@ public class OllirExpressionGenerator extends AJmmVisitor<Boolean, String> {
         Symbol s = ((JmmSymbolTable) symbolTable).getLocalVar(methodSignature, idNode.get("name"));
         if (s == null) {
             s = ((JmmSymbolTable) symbolTable).getParameter(methodSignature, idNode.get("name"));
-            assert s != null;
+            if (s == null){
+                s = symbolTable.getFields().stream().filter(field -> field.getName().equals(idNode.get("name"))).toList().get(0);
+
+                if(s == null){
+                    reports.add(new Report(ReportType.ERROR, Stage.OPTIMIZATION, Integer.parseInt(idNode.get("line")),
+                            Integer.parseInt(idNode.get("collumn")), "Variable " + idNode.get("name") + " not found"));
+                    return "";
+                }
+
+                String tmp = generateTmp(s.getType());
+                code.append(" ".repeat(getNumSpaces(indent)));
+                code.append(tmp + " :=."+ OllirGeneratorUtils.toOllirType(s.getType()) + " " + "getfield(this, " + OllirGeneratorUtils.getCode(s) + ")." + OllirGeneratorUtils.toOllirType(s.getType()) + ";\n");
+
+                return tmp;
+            }
             int idx = symbolTable.getParameters(methodSignature).indexOf(s);
 
             if (JmmSymbolTable.isMain(methodSignature)) {
                 return "$" + idx + "." + idNode.get("name") + "." + OllirGeneratorUtils.toOllirType(s.getType());
             }
 
-            return "$" + ++idx + "." + idNode.get("name") + "." + OllirGeneratorUtils.toOllirType(s.getType());
+            return "$" + ++idx + "." + OllirGeneratorUtils.getCode(s);
         }
 
-        return idNode.get("name") + "." + OllirGeneratorUtils.toOllirType(s.getType());
+        return OllirGeneratorUtils.getCode(s);
     }
 }
