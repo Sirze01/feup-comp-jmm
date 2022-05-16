@@ -514,7 +514,7 @@ public class OllirExpressionGenerator extends AJmmVisitor<Boolean, String> {
         if (s == null) {
             s = ((JmmSymbolTable) symbolTable).getParameter(methodSignature, idNode.get("name"));
             if (s == null){
-                s = symbolTable.getFields().stream().filter(field -> field.getName().equals(idNode.get("name"))).toList().get(0);
+                s = symbolTable.getFields().stream().filter(field -> field.getName().equals(idNode.get("name"))).collect(Collectors.toList()).get(0);
 
                 if(s == null){
                     reports.add(new Report(ReportType.ERROR, Stage.OPTIMIZATION, Integer.parseInt(idNode.get("line")),
