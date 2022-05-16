@@ -27,19 +27,27 @@ class HelloWorld extends HelloClass{
     }
 
     public HelloWorld sayHello(Int nr, String args) {
-        String b;
-        ioPlus.printHelloWorld();
+        int a;
+        a = 0;
+        while( a < 5 ){
+            a = a + 1;
+            ioPlus.printHelloWorld();
+        }
         return this;
     }
 
     public int[] sayHello(Int nr, String args, String hello) {
             int[] b;
-            String a;
-            HelloWorld c;
-            a = b.length;
-            c.sayHello(2, a, a);
+            int a;
+            a = 3;
 
-            b[0] = 2;
+            if (a < 2){
+                b[0] = 2;
+            }
+            else{
+                b[0 + 2] = 3 + 2;
+            }
+
             return new int[2];
         }
 }

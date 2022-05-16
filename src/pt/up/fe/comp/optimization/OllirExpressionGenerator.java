@@ -57,9 +57,15 @@ public class OllirExpressionGenerator extends AJmmVisitor<Boolean, String> {
         addVisit("ReturnExpression", this::returnExpressionVisit);
         addVisit("IDAssignment", this::idAssignmentVisit);
         addVisit("ArrayAssignment", this::arrayAssignmentVisit);
+        addVisit("IfStatement", this::ifStatementVisit);
+        addVisit("WhileStatement", this::whileStatementVisit);
+        addVisit("ScopeStatement", this::scopeStatementVisit);
+
+        addVisit("ParenthesisExpression", this::parenthesisVisit);
 
         addVisit("BinOp", this::binOpVisit);
         addVisit("UnaryOp", this::unaryOpVisit);
+
         addVisit("ArrayExpression", this::arrayExpressionVisit);
         addVisit("AccessExpression", this::accessVisit);
         addVisit("Literal", this::literalVisit);
@@ -94,6 +100,7 @@ public class OllirExpressionGenerator extends AJmmVisitor<Boolean, String> {
 
         if(returnNode.getJmmChild(0).getKind().equals("BinOp") || returnNode.getJmmChild(0).getKind().equals("UnaryOp")){
             String tmp = generateTmp(symbolTable.getReturnType(methodSignature));
+            before.append(" ".repeat(getNumSpaces(indent)));
             before.append(tmp);
             before.append(" :=." + OllirGeneratorUtils.toOllirType(symbolTable.getReturnType(methodSignature)) + " ");
             before.append(visit(returnNode.getJmmChild(0)));
@@ -106,6 +113,7 @@ public class OllirExpressionGenerator extends AJmmVisitor<Boolean, String> {
         }
 
         returnExpression.append(";\n");
+        code.append(before);
         code.append(returnExpression);
         return returnExpression.toString();
     }
@@ -339,6 +347,75 @@ public class OllirExpressionGenerator extends AJmmVisitor<Boolean, String> {
 
         assert s != null;
         return " ".repeat(getNumSpaces(indent)) + "invokevirtual(" + OllirGeneratorUtils.getCode(s) + ", \"" + accessNode.getJmmChild(1).getJmmChild(0).get("name") + "\"" + parameters + ")." + type + ";\n";
+    }
+
+    private String parenthesisVisit(JmmNode parenthesisNode, Boolean dummy) {
+        return visit(parenthesisNode.getJmmChild(0));
+    }
+
+    private String scopeStatementVisit(JmmNode scopeNode, Boolean dummy) {
+        StringBuilder scopeStmt = new StringBuilder();
+
+        for (JmmNode child : scopeNode.getChildren()){
+            scopeStmt.append(visit(child));
+        }
+
+        return scopeStmt.toString();
+    }
+
+    private String ifStatementVisit(JmmNode ifNode, Boolean dummy) {
+        StringBuilder ifStmt = new StringBuilder();
+
+        String then = "Then" + tempCount[0]++;
+        String after = "After" + tempCount[0]++;
+        String tmp = generateTmp("Boolean");
+
+        ifStmt.append(" ".repeat(getNumSpaces(indent)));
+        ifStmt.append(tmp + " :=.bool " + visit(ifNode.getJmmChild(0).getJmmChild(0)) + ";\n");
+
+        ifStmt.append(" ".repeat(getNumSpaces(indent)));
+        ifStmt.append("if (" + tmp + ") goto " + then + ";\n");
+
+
+        ifStmt.append(visit(ifNode.getJmmChild(2).getJmmChild(0)));
+        ifStmt.append(" ".repeat(getNumSpaces(indent)));
+
+        ifStmt.append("goto " + after + ";\n");
+
+        ifStmt.append(" ".repeat(getNumSpaces(indent - 1)));
+        ifStmt.append(then + ":\n");
+        ifStmt.append(visit(ifNode.getJmmChild(1).getJmmChild(0)));
+        ifStmt.append(" ".repeat(getNumSpaces(indent - 1)));
+        ifStmt.append(after + ":\n");
+
+        return ifStmt.toString();
+    }
+
+    private String whileStatementVisit(JmmNode whileNode, Boolean dummy) {
+        StringBuilder whileStmt = new StringBuilder();
+
+        String loop = "Loop" + tempCount[0]++;
+        String body = "Body" + tempCount[0]++;
+        String end = "EndLoop" + tempCount[0]++;
+        String tmp = generateTmp("Boolean");
+
+        whileStmt.append(" ".repeat(getNumSpaces(indent - 1)));
+        whileStmt.append(loop + ":\n");
+        whileStmt.append(" ".repeat(getNumSpaces(indent)));
+        whileStmt.append(tmp + " :=.bool " + visit(whileNode.getJmmChild(0).getJmmChild(0)) + ";\n");
+        whileStmt.append(" ".repeat(getNumSpaces(indent)));
+        whileStmt.append("if (" + tmp + ") goto " + body + ";\n");
+        whileStmt.append(" ".repeat(getNumSpaces(indent)));
+        whileStmt.append("goto " + end + ";\n");
+        whileStmt.append(" ".repeat(getNumSpaces(indent - 1)));
+        whileStmt.append(body + ":\n");
+        whileStmt.append(visit(whileNode.getJmmChild(1).getJmmChild(0)));
+        whileStmt.append(" ".repeat(getNumSpaces(indent)));
+        whileStmt.append("goto " + loop + ";\n");
+        whileStmt.append(" ".repeat(getNumSpaces(indent - 1)));
+        whileStmt.append(end + ":\n");
+
+        return whileStmt.toString();
     }
 
     private String literalVisit(JmmNode literalNode, Boolean dummy) {
