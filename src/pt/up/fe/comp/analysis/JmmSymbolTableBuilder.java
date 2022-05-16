@@ -163,6 +163,20 @@ public class JmmSymbolTableBuilder extends PreorderJmmVisitor<JmmSymbolTable, Bo
     }
 
     private Boolean instanceMethodVisit(JmmNode methodNode, JmmSymbolTable symbolTable) {
+        JmmMethod method = generateMethod(methodNode);
+        JmmMethod e = symbolTable.addMethod(method);
+        if (e != null) {
+            reports.add(new Report(ReportType.ERROR, Stage.SEMANTIC, Integer.parseInt(methodNode.get("line")), Integer.parseInt(methodNode.get("column")), "Method already defined. Last definition: " + e));
+        }
+
+        JmmNode methodBody = methodNode.getJmmChild(2);
+        addLocalVars(methodBody, method);
+        addAssignments(methodBody, symbolTable, method);
+
+        return true;
+    }
+
+    public static JmmMethod generateMethod(JmmNode methodNode){
         JmmNode methodHeaderNode = methodNode.getJmmChild(0);
         Type methodType = AstUtils.getNodeType(methodHeaderNode.getJmmChild(0));
         String methodName = methodHeaderNode.getJmmChild(1).get("name");
@@ -173,17 +187,6 @@ public class JmmSymbolTableBuilder extends PreorderJmmVisitor<JmmSymbolTable, Bo
         for (int param = 0; param < methodArgsNode.getNumChildren(); param += 2) {
             parameters.add(new Symbol(AstUtils.getNodeType(methodArgsNode.getJmmChild(param)), methodArgsNode.getJmmChild(param + 1).get("name")));
         }
-
-        JmmMethod method = new JmmMethod(methodName, methodType, parameters);
-        JmmMethod e = symbolTable.addMethod(method);
-
-        if (e != null) {
-            reports.add(new Report(ReportType.ERROR, Stage.SEMANTIC, Integer.parseInt(methodNode.get("line")), Integer.parseInt(methodNode.get("column")), "Method already defined. Last definition: " + e));
-        }
-        JmmNode methodBody = methodNode.getJmmChild(2);
-        addLocalVars(methodBody, method);
-        addAssignments(methodBody, symbolTable, method);
-
-        return true;
+        return new JmmMethod(methodName, methodType, parameters);
     }
 }

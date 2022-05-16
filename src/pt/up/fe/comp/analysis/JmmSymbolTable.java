@@ -40,8 +40,12 @@ public class JmmSymbolTable implements SymbolTable {
         return this.methods.putIfAbsent(method.toString(), method);
     }
 
-    public Map<String, Symbol> getFieldsMap(){
+    public Map<String, Symbol> getFieldsMap() {
         return fields;
+    }
+
+    public static boolean isMain(String methodSignature){
+        return methodSignature.equals(new JmmMethod("main", new Type("void", false), List.of(new Symbol(new Type("String", true), "any"))).toString());
     }
 
     @Override
@@ -69,11 +73,14 @@ public class JmmSymbolTable implements SymbolTable {
         return new ArrayList<>(methods.keySet());
     }
 
+    public JmmMethod getMethodObject(String methodSignature) {
+        return methods.get(methodSignature);
+    }
 
-    public void printLocalVars(){
-        for (JmmMethod method : methods.values()){
+    public void printLocalVars() {
+        for (JmmMethod method : methods.values()) {
             System.out.println(method.getName());
-            for(Symbol s : method.getVars()){
+            for (Symbol s : method.getVars()) {
                 System.out.println(s);
             }
         }
@@ -89,8 +96,30 @@ public class JmmSymbolTable implements SymbolTable {
         return methods.get(methodSignature).getParameters();
     }
 
+    public Symbol getParameter(String methodSignature, String parameterName) {
+        for (Symbol s : methods.get(methodSignature).getParameters()) {
+            if (parameterName.equals(s.getName())) {
+                return s;
+            }
+        }
+
+        return null;
+    }
+
+
     @Override
     public List<Symbol> getLocalVariables(String methodSignature) {
         return methods.get(methodSignature).getVars();
+    }
+
+    public Symbol getLocalVar(String methodSignature, String varName) {
+        for (Symbol s : methods.get(methodSignature).getVars()) {
+            if (varName.equals(s.getName())) {
+                return s;
+
+            }
+        }
+
+        return null;
     }
 }

@@ -136,7 +136,7 @@ Type :
 
 // Statements
 
-Statement #void:
+Statement:
     ScopeStatement
     | IfStatement
     | WhileStatement
@@ -165,7 +165,7 @@ IdAssignmentExpression #void:
 ;
 
 ArrayAssignmentExpression #void:
-    (ArrayExpression #ArrayExpression(2)) <EQUALS> Expression #ArrayAssignment(2)
+    (ArrayExpression #ArrayExpression) <EQUALS> Expression #ArrayAssignment(3)
 ;
 
 // Expressions
@@ -220,15 +220,15 @@ FinalTerms #void:
     | <TRUE> ({jjtThis.put("value", lastConsumedToken.getImage()); }{jjtThis.put("type", "Boolean"); }) #Literal
     | <FALSE> ({jjtThis.put("value", lastConsumedToken.getImage()); }{jjtThis.put("type", "Boolean"); }) #Literal
     | <IDENTIFIER> ({jjtThis.put("name", lastConsumedToken.getImage()); }) #ID
-    | <THIS> ({jjtThis.put("value", lastConsumedToken.getImage()); }{jjtThis.put("type", "Object"); }) #Literal
+    | <THIS> ({jjtThis.put("value", "this"); }{jjtThis.put("type", "Object"); }) #Literal
     | NewExpression
     | ParenthesisExpression
 ;
 
 NewExpression #void:
     <NEW> (
-    ( (<INT> ArrayExpression #ArrayExpression ) ({jjtThis.put("type", "IntArray");})) #_New
-    | ( ( (<IDENTIFIER> ({jjtThis.put("value", lastConsumedToken.getImage()); }) #ID) <OPENPAREN> <CLOSEPAREN>)
+    (<INT> ArrayExpression {jjtThis.put("type", "IntArray");}) #_New
+    | ( ( (<IDENTIFIER> ({jjtThis.put("type", lastConsumedToken.getImage()); }) #ID) <OPENPAREN> <CLOSEPAREN>)
             ({jjtThis.put("type", "Class");})) #_New
     )
 ;
