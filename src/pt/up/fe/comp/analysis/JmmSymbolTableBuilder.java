@@ -102,43 +102,49 @@ public class JmmSymbolTableBuilder extends PreorderJmmVisitor<JmmSymbolTable, Bo
     }
 
     private void addAssignments(JmmNode methodBody, JmmSymbolTable symbolTable, JmmMethod method) {
-
+        System.out.println(methodBody.getChildren());
         for (JmmNode child : methodBody.getChildren()) {
-            if (Objects.equals(child.getKind(), "IDAssignment")) {
-                String varName = child.getJmmChild(0).get("name");
-                if (Objects.equals(child.getJmmChild(1).getKind(), "ArrayExpression")) {
-                    JmmNode arrayNode = child.getJmmChild(1);
-                    if (!Objects.equals(arrayNode.getJmmChild(1).get("type"), "Int")) {
-                        reports.add(new Report(ReportType.ERROR, Stage.SEMANTIC, Integer.parseInt(child.get("line")), Integer.parseInt(child.get("column")), "Indexed an array without using an integer"));
-                        return;
-                    }
-                } else if (Objects.equals(child.getJmmChild(1).getKind(), "_New")){
+            System.out.println(child.getKind());
+            if (child.getKind().equals("Statement")) {
+                child = child.getJmmChild(0);
+                if (Objects.equals(child.getKind(), "IDAssignment")) {
+                    System.out.println("entered IDAssignment");
+
+                    String varName = child.getJmmChild(0).get("name");
                     if (Objects.equals(child.getJmmChild(1).getKind(), "ArrayExpression")) {
-                        JmmNode arrayNode = child.getJmmChild(0);
+                        JmmNode arrayNode = child.getJmmChild(1);
                         if (!Objects.equals(arrayNode.getJmmChild(1).get("type"), "Int")) {
-                            reports.add(new Report(ReportType.ERROR, Stage.SEMANTIC, Integer.parseInt(child.get("line")), Integer.parseInt(child.get("column")), "Create an array without an integer as size"));
+                            reports.add(new Report(ReportType.ERROR, Stage.SEMANTIC, Integer.parseInt(child.get("line")), Integer.parseInt(child.get("column")), "Indexed an array without using an integer"));
                             return;
                         }
-                    }
-                } else if (child.getJmmChild(1).getAttributes().contains("type")) {
-                     if (!Objects.equals(child.getJmmChild(1).get("type"), method.getVars().get(0).getType().getName())) {
+                    } else if (Objects.equals(child.getJmmChild(1).getKind(), "_New")) {
+                        if (Objects.equals(child.getJmmChild(1).getKind(), "ArrayExpression")) {
+                            JmmNode arrayNode = child.getJmmChild(0);
+                            if (!Objects.equals(arrayNode.getJmmChild(1).get("type"), "Int")) {
+                                reports.add(new Report(ReportType.ERROR, Stage.SEMANTIC, Integer.parseInt(child.get("line")), Integer.parseInt(child.get("column")), "Create an array without an integer as size"));
+                                return;
+                            }
+                        }
+                    } else if (child.getJmmChild(1).getAttributes().contains("type")) {
+                        if (!Objects.equals(child.getJmmChild(1).get("type"), method.getVars().get(0).getType().getName())) {
                             reports.add(new Report(ReportType.ERROR, Stage.SEMANTIC, Integer.parseInt(child.get("line")), Integer.parseInt(child.get("column")), "Assigned variable '" + varName + "' with different type value"));
                             return;
-                     }
-                     else {
+                        } else {
+                            String assignedVarName = child.getJmmChild(1).get("name");
+
+                            Type type = AstUtils.getNodeType(child.getJmmChild(0));
+
+                            Symbol symbol = new Symbol(type, assignedVarName);
+
+                            symbolTable.addField(symbol);
+                        }
+                    } else {
                         String assignedVarName = child.getJmmChild(1).get("name");
-
-                        Type type = AstUtils.getNodeType(child.getJmmChild(0));
-
-                        Symbol symbol = new Symbol(type, assignedVarName);
-
-                        symbolTable.addField(symbol);
+                        reports.add(new Report(ReportType.ERROR, Stage.SEMANTIC, Integer.parseInt(child.get("line")), Integer.parseInt(child.get("column")), "Assigned undefined variable '" + assignedVarName + "'"));
+                        return;
                     }
-                } else {
-                    String assignedVarName = child.getJmmChild(1).get("name");
-                    reports.add(new Report(ReportType.ERROR, Stage.SEMANTIC, Integer.parseInt(child.get("line")), Integer.parseInt(child.get("column")), "Assigned undefined variable '" + assignedVarName + "'"));
-                    return;
                 }
+
             }
         }
     }
@@ -157,7 +163,9 @@ public class JmmSymbolTableBuilder extends PreorderJmmVisitor<JmmSymbolTable, Bo
 
         JmmNode methodBody = methodNode.getJmmChild(2);
         addLocalVars(methodBody, method);
+        System.out.println("pass local vars");
         addAssignments(methodBody, symbolTable, method);
+        System.out.println("pass assignments");
 
         return true;
     }
@@ -165,10 +173,10 @@ public class JmmSymbolTableBuilder extends PreorderJmmVisitor<JmmSymbolTable, Bo
     private Boolean instanceMethodVisit(JmmNode methodNode, JmmSymbolTable symbolTable) {
         JmmMethod method = generateMethod(methodNode);
         JmmMethod e = symbolTable.addMethod(method);
+
         if (e != null) {
             reports.add(new Report(ReportType.ERROR, Stage.SEMANTIC, Integer.parseInt(methodNode.get("line")), Integer.parseInt(methodNode.get("column")), "Method already defined. Last definition: " + e));
         }
-
         JmmNode methodBody = methodNode.getJmmChild(2);
         addLocalVars(methodBody, method);
         addAssignments(methodBody, symbolTable, method);
