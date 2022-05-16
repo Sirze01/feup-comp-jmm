@@ -25,10 +25,18 @@ public abstract class OllirGeneratorUtils {
         }
 
         switch (type) {
-            case "void" -> code.append("V");
-            case "Int" -> code.append("i32");
-            case "Boolean" -> code.append("bool");
-            default -> code.append(type);
+            case "void":
+                code.append("V");
+                break;
+            case "Int":
+                code.append("i32");
+                break;
+            case "Boolean":
+                code.append("bool");
+                break;
+            default:
+                code.append(type);
+                break;
         }
 
         return code.toString();

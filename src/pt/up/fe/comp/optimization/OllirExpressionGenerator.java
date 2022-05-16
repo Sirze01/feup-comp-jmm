@@ -140,7 +140,7 @@ public class OllirExpressionGenerator extends AJmmVisitor<Boolean, String> {
         Symbol s = ((JmmSymbolTable) symbolTable).getLocalVar(methodSignature, assignmentNode.getJmmChild(0).get("name"));
 
         if (s == null){
-            s = symbolTable.getFields().stream().filter(field -> field.getName().equals(assignmentNode.getJmmChild(0).get("name"))).toList().get(0);
+            s = symbolTable.getFields().stream().filter(field -> field.getName().equals(assignmentNode.getJmmChild(0).get("name"))).collect(Collectors.toList()).get(0);
 
             assignmentStmt.append(" ".repeat(getNumSpaces(indent)));
             assignmentStmt.append("putfield(this, " + OllirGeneratorUtils.getCode(s) + ", " + visit(assignmentNode.getJmmChild(1)) + ").V;\n");
@@ -204,7 +204,7 @@ public class OllirExpressionGenerator extends AJmmVisitor<Boolean, String> {
                     s = ((JmmSymbolTable) symbolTable).getParameter(methodSignature, child.get("name"));
                     if (s == null){
                         JmmNode finalChild = child;
-                        s = symbolTable.getFields().stream().filter(field -> field.getName().equals(finalChild.get("name"))).toList().get(0);
+                        s = symbolTable.getFields().stream().filter(field -> field.getName().equals(finalChild.get("name"))).collect(Collectors.toList()).get(0);
                     }
                 }
                 type = OllirGeneratorUtils.toOllirType(s.getType().getName());
@@ -220,20 +220,38 @@ public class OllirExpressionGenerator extends AJmmVisitor<Boolean, String> {
         String opType = OllirGeneratorUtils.getTypeFromOllirVar(op[0]);
         binOpStmt.append(op[0]);
         switch (binOpNode.get("op")) {
-            case "And" -> binOpStmt.append(" &&.")
+            case "And":
+                binOpStmt.append(" &&.")
+                        .append(opType);
+                break;
+
+            case "Less":
+                binOpStmt.append(" <.")
                     .append(opType);
-            case "Less" -> binOpStmt.append(" <.")
+                break;
+
+            case "Add":
+                binOpStmt.append(" +.")
                     .append(opType);
-            case "Add" -> binOpStmt.append(" +.")
+                break;
+
+            case "Sub":
+                binOpStmt.append(" -.")
                     .append(opType);
-            case "Sub" -> binOpStmt.append(" -.")
+                break;
+
+            case "Mult":
+                binOpStmt.append(" *.")
                     .append(opType);
-            case "Mult" -> binOpStmt.append(" *.")
+                break;
+
+            case "Div":
+                binOpStmt.append(" /.")
                     .append(opType);
-            case "Div" -> binOpStmt.append(" /.")
-                    .append(opType);
-            default -> {
-            }
+                break;
+
+            default:
+                break;
         }
         binOpStmt.append(" " + op[1]);
 
@@ -263,7 +281,7 @@ public class OllirExpressionGenerator extends AJmmVisitor<Boolean, String> {
                     s = ((JmmSymbolTable) symbolTable).getParameter(methodSignature, child.get("name"));
                     if (s == null){
                         JmmNode finalChild = child;
-                        s = symbolTable.getFields().stream().filter(field -> field.getName().equals(finalChild.get("name"))).toList().get(0);
+                        s = symbolTable.getFields().stream().filter(field -> field.getName().equals(finalChild.get("name"))).collect(Collectors.toList()).get(0);
                     }
                 }
                 type = OllirGeneratorUtils.toOllirType(s.getType());
@@ -277,10 +295,13 @@ public class OllirExpressionGenerator extends AJmmVisitor<Boolean, String> {
 
         String opType = OllirGeneratorUtils.getTypeFromOllirVar(op);
         switch (unaryNode.get("op")) {
-            case "Not" -> unaryOpStmt.append("!.")
+            case "Not":
+                unaryOpStmt.append("!.")
                     .append(opType);
-            default -> {
-            }
+                break;
+
+            default:
+                break;
         }
         unaryOpStmt.append(" " + op);
 
@@ -305,7 +326,7 @@ public class OllirExpressionGenerator extends AJmmVisitor<Boolean, String> {
                 s = ((JmmSymbolTable) symbolTable).getParameter(methodSignature, child.get("name"));
                 if (s == null){
                     JmmNode finalChild = child;
-                    s = symbolTable.getFields().stream().filter(field -> field.getName().equals(finalChild.get("name"))).toList().get(0);
+                    s = symbolTable.getFields().stream().filter(field -> field.getName().equals(finalChild.get("name"))).collect(Collectors.toList()).get(0);
                 }
             }
             type = OllirGeneratorUtils.toOllirType(s.getType());
