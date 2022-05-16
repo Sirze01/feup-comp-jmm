@@ -18,12 +18,16 @@ public abstract class AstUtils {
         return type;
     }
 
-    public static JmmNode getFirstDescendantOfKind(JmmNode node, String kind){
+    public static JmmNode getFirstOfKind(JmmNode node, String kind){
+        if (node.getKind().equals(kind)){
+            return node;
+        }
+
         for(JmmNode child : node.getChildren()){
             if(child.getKind().equals(kind)){
                 return child;
             }
-            return getFirstDescendantOfKind(child, kind);
+            return getFirstOfKind(child, kind);
         }
 
         return null;

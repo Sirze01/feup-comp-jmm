@@ -20,7 +20,7 @@ class HelloWorld extends HelloClass{
 
 	}
 
-	public int sayHello(String args, Int nr) {
+	public int sayHello(String args) {
 	    int a;
         ioPlus.printHelloWorld();
         return 1;
@@ -34,16 +34,11 @@ class HelloWorld extends HelloClass{
 
     public int[] sayHello(Int nr, String args, String hello) {
             int[] b;
-            int a;
+            String a;
             HelloWorld c;
-            HelloWorld d;
-            bool e;
+            a = b.length;
+            c.sayHello(2, a, a);
 
-            ioPlus.printHelloWorld();
-
-            a = 1 * 2 + b[1] + 4 * 5 + 6;
-
-            e = !true && false;
             b[0] = 2;
             return new int[2];
         }

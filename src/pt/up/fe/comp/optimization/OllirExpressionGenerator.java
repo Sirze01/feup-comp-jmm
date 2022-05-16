@@ -1,15 +1,18 @@
 package pt.up.fe.comp.optimization;
 
+import pt.up.fe.comp.analysis.JmmMethod;
 import pt.up.fe.comp.analysis.JmmSymbolTable;
 import pt.up.fe.comp.ast.AstUtils;
 import pt.up.fe.comp.jmm.analysis.table.Symbol;
 import pt.up.fe.comp.jmm.analysis.table.SymbolTable;
+import pt.up.fe.comp.jmm.analysis.table.Type;
 import pt.up.fe.comp.jmm.ast.AJmmVisitor;
 import pt.up.fe.comp.jmm.ast.JmmNode;
 import pt.up.fe.comp.jmm.report.Report;
 
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 public class OllirExpressionGenerator extends AJmmVisitor<Boolean, String> {
     private final List<Report> reports;
@@ -58,6 +61,7 @@ public class OllirExpressionGenerator extends AJmmVisitor<Boolean, String> {
         addVisit("BinOp", this::binOpVisit);
         addVisit("UnaryOp", this::unaryOpVisit);
         addVisit("ArrayExpression", this::arrayExpressionVisit);
+        addVisit("AccessExpression", this::accessVisit);
         addVisit("Literal", this::literalVisit);
         addVisit("ID", this::idVisit);
         addVisit("_New", this::newVisit);
@@ -66,6 +70,10 @@ public class OllirExpressionGenerator extends AJmmVisitor<Boolean, String> {
     }
 
     private String generateTmp(String type) {
+        return "tmp" + tempCount[0]++ + "." + OllirGeneratorUtils.toOllirType(type);
+    }
+
+    private String generateTmp(Type type) {
         return "tmp" + tempCount[0]++ + "." + OllirGeneratorUtils.toOllirType(type);
     }
 
@@ -78,12 +86,24 @@ public class OllirExpressionGenerator extends AJmmVisitor<Boolean, String> {
     }
 
     private String returnExpressionVisit(JmmNode returnNode, Boolean dummy) {
+        StringBuilder before = new StringBuilder();
         StringBuilder returnExpression = new StringBuilder();
 
         returnExpression.append(" ".repeat(getNumSpaces(indent)));
         returnExpression.append("ret.").append(OllirGeneratorUtils.toOllirType(symbolTable.getReturnType(methodSignature))).append(" ");
 
-        returnExpression.append(visit(returnNode.getJmmChild(0)));
+        if(returnNode.getJmmChild(0).getKind().equals("BinOp") || returnNode.getJmmChild(0).getKind().equals("UnaryOp")){
+            String tmp = generateTmp(symbolTable.getReturnType(methodSignature));
+            before.append(tmp);
+            before.append(" :=." + OllirGeneratorUtils.toOllirType(symbolTable.getReturnType(methodSignature)) + " ");
+            before.append(visit(returnNode.getJmmChild(0)));
+            before.append(";\n");
+
+            returnExpression.append(tmp);
+        }else{
+            returnExpression.append(visit(returnNode.getJmmChild(0)));
+
+        }
 
         returnExpression.append(";\n");
         code.append(returnExpression);
@@ -146,7 +166,6 @@ public class OllirExpressionGenerator extends AJmmVisitor<Boolean, String> {
         String[] op = {"", ""};
         for (int i = 0; i < 2; i++) {
             if (!(binOpNode.getJmmChild(i).getKind().equals("BinOp") ||
-                    binOpNode.getJmmChild(i).getKind().equals("ArrayExpression") ||
                     binOpNode.getJmmChild(i).getKind().equals("AccessExpression") ||
                     binOpNode.getJmmChild(i).getKind().equals("CallExpression") ||
                     binOpNode.getJmmChild(i).getKind().equals("UnaryOp"))) {
@@ -155,12 +174,12 @@ public class OllirExpressionGenerator extends AJmmVisitor<Boolean, String> {
             }
 
 
-            JmmNode child = AstUtils.getFirstDescendantOfKind(binOpNode.getJmmChild(i), "Literal");
+            JmmNode child = AstUtils.getFirstOfKind(binOpNode.getJmmChild(i), "Literal");
             String type = "";
             if (child != null) {
                 type = OllirGeneratorUtils.toOllirType(child.get("type"));
             } else {
-                child = AstUtils.getFirstDescendantOfKind(binOpNode.getJmmChild(i), "ID");
+                child = AstUtils.getFirstOfKind(binOpNode.getJmmChild(i), "ID");
                 Symbol s = ((JmmSymbolTable) symbolTable).getLocalVar(methodSignature, child.get("name"));
                 if (s == null) {
                     s = ((JmmSymbolTable) symbolTable).getParameter(methodSignature, child.get("name"));
@@ -206,17 +225,16 @@ public class OllirExpressionGenerator extends AJmmVisitor<Boolean, String> {
         String op;
 
         if (!(unaryNode.getJmmChild(0).getKind().equals("BinOp") ||
-                unaryNode.getJmmChild(0).getKind().equals("ArrayExpression") ||
                 unaryNode.getJmmChild(0).getKind().equals("AccessExpression") ||
                 unaryNode.getJmmChild(0).getKind().equals("CallExpression"))) {
             op = visit(unaryNode.getJmmChild(0));
         } else {
-            JmmNode child = AstUtils.getFirstDescendantOfKind(unaryNode, "Literal");
+            JmmNode child = AstUtils.getFirstOfKind(unaryNode, "Literal");
             String type = "";
             if (child != null) {
                 type = OllirGeneratorUtils.toOllirType(child.get("type"));
             } else {
-                child = AstUtils.getFirstDescendantOfKind(unaryNode.getJmmChild(0), "ID");
+                child = AstUtils.getFirstOfKind(unaryNode.getJmmChild(0), "ID");
                 Symbol s = ((JmmSymbolTable) symbolTable).getLocalVar(methodSignature, child.get("name"));
                 if (s == null) {
                     s = ((JmmSymbolTable) symbolTable).getParameter(methodSignature, child.get("name"));
@@ -249,37 +267,28 @@ public class OllirExpressionGenerator extends AJmmVisitor<Boolean, String> {
 
         String expResult;
 
-        if (!(arrayNode.getJmmChild(1).getKind().equals("BinOp") ||
-                arrayNode.getJmmChild(1).getKind().equals("ArrayExpression") ||
-                arrayNode.getJmmChild(1).getKind().equals("AccessExpression") ||
-                arrayNode.getJmmChild(1).getKind().equals("CallExpression"))) {
-            expResult = visit(arrayNode.getJmmChild(1));
+        JmmNode child = AstUtils.getFirstOfKind(arrayNode.getJmmChild(1), "Literal");
+        String type;
+        if (child != null) {
+            type = OllirGeneratorUtils.toOllirType(child.get("type"));
         } else {
-            JmmNode child = AstUtils.getFirstDescendantOfKind(arrayNode.getJmmChild(1), "Literal");
-            String type;
-            if (child != null) {
-                type = OllirGeneratorUtils.toOllirType(child.get("type"));
-            } else {
-                child = AstUtils.getFirstDescendantOfKind(arrayNode.getJmmChild(1), "ID");
-                Symbol s = ((JmmSymbolTable) symbolTable).getLocalVar(methodSignature, child.get("name"));
-                if (s == null) {
-                    s = ((JmmSymbolTable) symbolTable).getParameter(methodSignature, child.get("name"));
-                }
-                type = OllirGeneratorUtils.toOllirType(s.getType());
+            child = AstUtils.getFirstOfKind(arrayNode.getJmmChild(1), "ID");
+            Symbol s = ((JmmSymbolTable) symbolTable).getLocalVar(methodSignature, child.get("name"));
+            if (s == null) {
+                s = ((JmmSymbolTable) symbolTable).getParameter(methodSignature, child.get("name"));
             }
-            expResult = generateTmp(type);
-
-
-            before.append(" ".repeat(getNumSpaces(indent)));
-            before.append(expResult + " :=." + type + " " + visit(arrayNode.getJmmChild(1)) + ";\n");
+            type = OllirGeneratorUtils.toOllirType(s.getType());
         }
+        expResult = generateTmp(type);
 
-        String opType = OllirGeneratorUtils.getTypeFromOllirVar(expResult);
+        before.append(" ".repeat(getNumSpaces(indent)));
+        before.append(expResult + " :=." + type + " " + visit(arrayNode.getJmmChild(1)) + ";\n");
 
         Symbol s = ((JmmSymbolTable) symbolTable).getLocalVar(methodSignature, arrayNode.getJmmChild(0).get("name"));
         if (s == null) {
             s = ((JmmSymbolTable) symbolTable).getParameter(methodSignature, arrayNode.getJmmChild(0).get("name"));
         }
+
         arrayStmt.append(s.getName() + "[")
                 .append(expResult)
                 .append("].")
@@ -287,6 +296,49 @@ public class OllirExpressionGenerator extends AJmmVisitor<Boolean, String> {
 
         code.append(before);
         return arrayStmt.toString();
+    }
+
+    private String accessVisit(JmmNode accessNode, Boolean dummy) {
+        if (accessNode.getNumChildren() == 1) {
+            return "arraylength(" + visit(accessNode.getJmmChild(0)) + ").i32";
+        }
+
+
+        List<String> methods = symbolTable.getMethods();
+        JmmMethod thisMethod = null;
+        for (String m : methods) {
+            JmmMethod method = ((JmmSymbolTable) symbolTable).getMethodObject(m);
+
+            if (method.getName().equals(accessNode.getJmmChild(1).getJmmChild(0).get("name"))) {
+                if (method.getParameters().size() == accessNode.getJmmChild(1).getJmmChild(1).getNumChildren() ) {
+                    thisMethod = method;
+                }
+            }
+        }
+
+
+        String parameters = accessNode.getJmmChild(1).getJmmChild(1).getChildren().isEmpty() ?
+                "" :
+                ", " + accessNode.getJmmChild(1).getJmmChild(1).getChildren().stream()
+                        .map(this::visit).collect(Collectors.joining(", "));
+
+        if (thisMethod == null) {
+            return " ".repeat(getNumSpaces(indent)) + "invokestatic(" + accessNode.getJmmChild(0).get("name") + ", \"" + accessNode.getJmmChild(1).getJmmChild(0).get("name") + "\"" + parameters + ").V;\n";
+        }
+
+        String type = OllirGeneratorUtils.toOllirType(thisMethod.getReturnType());
+        Symbol s = ((JmmSymbolTable) symbolTable).getLocalVar(methodSignature, accessNode.getJmmChild(0).get("name"));
+
+        if (s == null){
+            for (Symbol parameter : symbolTable.getParameters(methodSignature)){
+                if (parameter.getName().equals(accessNode.getJmmChild(0).get("name"))){
+                    s = parameter;
+                }
+            }
+        }
+
+        assert s != null;
+        return " ".repeat(getNumSpaces(indent)) + "invokevirtual(" + OllirGeneratorUtils.getCode(s) + ", \"" + accessNode.getJmmChild(1).getJmmChild(0).get("name") + "\"" + parameters + ")." + type + ";\n";
     }
 
     private String literalVisit(JmmNode literalNode, Boolean dummy) {
@@ -307,7 +359,7 @@ public class OllirExpressionGenerator extends AJmmVisitor<Boolean, String> {
                     .append(" :=.")
                     .append(OllirGeneratorUtils.toOllirType(newNode.get("type")));
             before.append(" new(");
-            before.append("array,");
+            before.append("array, ");
             before.append(visit(newNode.getJmmChild(0)));
             before.append(").array.i32");
             before.append(";\n");
@@ -344,10 +396,10 @@ public class OllirExpressionGenerator extends AJmmVisitor<Boolean, String> {
             int idx = symbolTable.getParameters(methodSignature).indexOf(s);
 
             if (JmmSymbolTable.isMain(methodSignature)) {
-                return "$" + idx + idNode.get("name") + "." + OllirGeneratorUtils.toOllirType(s.getType());
+                return "$" + idx + "." + idNode.get("name") + "." + OllirGeneratorUtils.toOllirType(s.getType());
             }
 
-            return "$" + ++idx + idNode.get("name") + "." + OllirGeneratorUtils.toOllirType(s.getType());
+            return "$" + ++idx + "." + idNode.get("name") + "." + OllirGeneratorUtils.toOllirType(s.getType());
         }
 
         return idNode.get("name") + "." + OllirGeneratorUtils.toOllirType(s.getType());
