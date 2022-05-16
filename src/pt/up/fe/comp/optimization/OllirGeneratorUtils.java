@@ -60,6 +60,16 @@ public abstract class OllirGeneratorUtils {
         if (literalNode.get("value").equals("this")) {
             return "$0.this." + symbolTable.getClassName();
         }
+
+        if (literalNode.get("value").equals("true")){
+            return 1 + "." + toOllirType(literalNode.get("type"), false);
+        }
+
+        if (literalNode.get("value").equals("false")) {
+            return 0 + "." + toOllirType(literalNode.get("type"), false);
+
+        }
+
         return literalNode.get("value") + "." + toOllirType(literalNode.get("type"), false);
     }
 
