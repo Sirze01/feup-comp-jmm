@@ -1,4 +1,4 @@
-
+package pt.up.fe.comp;
 /**
  * Copyright 2021 SPeCS.
  * 

@@ -4,10 +4,15 @@ import pt.up.fe.comp.jmm.analysis.JmmSemanticsResult;
 import pt.up.fe.comp.jmm.ollir.JmmOptimization;
 import pt.up.fe.comp.jmm.ollir.OllirResult;
 
+
 public class JmmOptimizer implements JmmOptimization {
     @Override
     public OllirResult toOllir(JmmSemanticsResult semanticsResult) {
-        return null;
-    }
 
+        OllirGenerator generator = new OllirGenerator(semanticsResult.getSymbolTable());
+        generator.visit(semanticsResult.getRootNode(), null);
+        System.out.println(generator.getCode());
+
+        return new OllirResult(semanticsResult, generator.getCode(), generator.getReports());
+    }
 }

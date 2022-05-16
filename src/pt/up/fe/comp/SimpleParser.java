@@ -3,6 +3,7 @@ package pt.up.fe.comp;
 import java.util.Collections;
 import java.util.Map;
 
+import pt.up.fe.comp.ast.LineColAnnotatorVisitor;
 import pt.up.fe.comp.jmm.ast.JmmNode;
 import pt.up.fe.comp.jmm.parser.JmmParser;
 import pt.up.fe.comp.jmm.parser.JmmParserResult;
@@ -46,13 +47,14 @@ public class SimpleParser implements JmmParser {
                 throw new ParseException(parser, "Parsing problems, root is null");
             }
 
-
-            System.out.println(((JmmNode) root).sanitize().toTree());
-
             if (!(root instanceof JmmNode)) {
                 return JmmParserResult.newError(new Report(ReportType.WARNING, Stage.SYNTATIC, -1,
                         "JmmNode interface not yet implemented, returning null root node"));
             }
+
+            new LineColAnnotatorVisitor().visit((JmmNode) root);
+
+            //System.out.println(((JmmNode) root).sanitize().toTree());
 
             return new JmmParserResult((JmmNode) root, Collections.emptyList(), config);
 
