@@ -47,26 +47,27 @@ public class JmmSymbolTableBuilder extends PreorderJmmVisitor<JmmSymbolTable, Bo
 
         for (JmmNode node : classNode.getChildren()) {
 
-            System.out.println("--Class Declaration--\n");
             System.out.println(" Node:\n  " + node);
             System.out.println("---------");
             System.out.println("  Tree:\n   " + node.toTree());
-            System.out.println("  Kind:\n   " + node.getKind());
-            System.out.println("---------\n");
-
 
             if (Objects.equals(node.getKind(), "VarDeclaration")) {
                 String varName = node.getJmmChild(1).get("name");
                 if (symbolTable.getFieldsMap().containsKey(varName)) {
-                    reports.add(new Report(ReportType.ERROR, Stage.SEMANTIC, Integer.parseInt(node.get("line")), Integer.parseInt(node.get("column")), "Variable already defined in this scope. Last definition: " + symbolTable.getFieldsMap().get(varName)));
+                    reports.add(new Report(
+                            ReportType.ERROR,
+                            Stage.SEMANTIC,
+                            Integer.parseInt(node.get("line")),
+                            Integer.parseInt(node.get("column")),
+                            "Variable already defined in this scope. Last definition: " + symbolTable.getFieldsMap().get(varName)));
                     continue;
                 }
-
                 Type type = AstUtils.getNodeType(node.getJmmChild(0));
 
                 Symbol symbol = new Symbol(type, varName);
 
                 symbolTable.addField(symbol);
+
             }
 
 
@@ -89,26 +90,16 @@ public class JmmSymbolTableBuilder extends PreorderJmmVisitor<JmmSymbolTable, Bo
 
                 if (se != null) {
                     reports.add(new Report(ReportType.ERROR, Stage.SEMANTIC, Integer.parseInt(child.get("line")), Integer.parseInt(child.get("column")), "Variable already defined in this scope. Last definition: " + se));
-                }/*
-                else{
-                    Type type = AstUtils.getNodeType(child.getJmmChild(0));
-
-                    Symbol symbol = new Symbol(type, varName);
-
-                    symbolTable.addField(symbol);
-                }*/
+                }
             }
         }
     }
 
     private void addAssignments(JmmNode methodBody, JmmSymbolTable symbolTable, JmmMethod method) {
-        System.out.println(methodBody.getChildren());
         for (JmmNode child : methodBody.getChildren()) {
-            System.out.println(child.getKind());
             if (child.getKind().equals("Statement")) {
                 child = child.getJmmChild(0);
                 if (Objects.equals(child.getKind(), "IDAssignment")) {
-                    System.out.println("entered IDAssignment");
 
                     String varName = child.getJmmChild(0).get("name");
                     if (Objects.equals(child.getJmmChild(1).getKind(), "ArrayExpression")) {
@@ -163,9 +154,7 @@ public class JmmSymbolTableBuilder extends PreorderJmmVisitor<JmmSymbolTable, Bo
 
         JmmNode methodBody = methodNode.getJmmChild(2);
         addLocalVars(methodBody, method);
-        System.out.println("pass local vars");
         addAssignments(methodBody, symbolTable, method);
-        System.out.println("pass assignments");
 
         return true;
     }
