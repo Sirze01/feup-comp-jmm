@@ -15,7 +15,7 @@ import pt.up.fe.comp.jmm.report.Stage;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-
+// ToDo: Look for import name also when looking for id
 public class OllirExpressionGenerator extends AJmmVisitor<Boolean, String> {
     private final List<Report> reports;
     private final SymbolTable symbolTable;
@@ -160,7 +160,7 @@ public class OllirExpressionGenerator extends AJmmVisitor<Boolean, String> {
     private String arrayAssignmentVisit(JmmNode assignmentNode, Boolean dummy) {
         StringBuilder before = new StringBuilder();
         StringBuilder assignmentStmt = new StringBuilder();
-
+        // ToDo: nulll s -> needs to search it elsewhere
         Symbol s = ((JmmSymbolTable) symbolTable).getLocalVar(methodSignature, assignmentNode.getJmmChild(0).get("name"));
         String idx = "tmp" + tempCount[0]++ + ".i32";
         before.append(" ".repeat(getNumSpaces(indent)));

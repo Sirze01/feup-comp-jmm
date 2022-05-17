@@ -19,11 +19,10 @@ public class OllirGenerator extends AJmmVisitor<Boolean, Boolean> {
     private final StringBuilder code = new StringBuilder();
     private final List<Report> reports = new ArrayList<>();
     private final Map<String, String> config;
+    private final int[] tempCount ={ 0 };
 
     private int indent = 0;
-    private int[] tempCount ={ 0 };
-
-    private String currentMethodSignature = null;
+    private String currentMethodSignature;
 
     private int getNumSpaces(int indent) {
         return indent * OllirGeneratorUtils.getNumSpaces(config);
@@ -63,6 +62,7 @@ public class OllirGenerator extends AJmmVisitor<Boolean, Boolean> {
             code.append("import ").append(importedPkg).append(";\n");
         }
         code.append('\n');
+
         for (JmmNode child : programNode.getChildren()) {
             visit(child);
         }
@@ -88,6 +88,13 @@ public class OllirGenerator extends AJmmVisitor<Boolean, Boolean> {
         }
 
         code.append("\n\n");
+
+        code.append(" ".repeat(getNumSpaces(indent)));
+        code.append(".construct " + symbolTable.getClassName() + "().V {\n");
+        code.append(" ".repeat(getNumSpaces(indent + 1)));
+        code.append("invokespecial(this, \"<init>\").V;\n");
+        code.append(" ".repeat(getNumSpaces(indent)));
+        code.append("}\n\n");
 
         for (JmmNode child : classNode.getChildren()) {
             visit(child);
