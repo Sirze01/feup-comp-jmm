@@ -453,8 +453,7 @@ public class Jasmin {
                     if(Integer.parseInt(leftValue) >= -128 && Integer.parseInt(leftValue) <= 127){
                         assignInstruction.append("\tiinc ")
                                 .append(destVariable.getVirtualReg()).append(" ")
-                                .append(leftValue)
-                                .append(((LiteralElement) binaryOperation.getRightOperand()).getLiteral()).append("\n");
+                                .append(leftValue).append("\n");
                         return assignInstruction.toString();
                     }
 
@@ -467,8 +466,7 @@ public class Jasmin {
                     if(Integer.parseInt(rightValue) >= -128 && Integer.parseInt(rightValue) <= 127) {
                         assignInstruction.append("\tiinc ")
                                 .append(destVariable.getVirtualReg()).append(" ")
-                                .append(rightValue)
-                                .append(((LiteralElement) binaryOperation.getLeftOperand()).getLiteral()).append("\n");
+                                .append(rightValue).append("\n");
                         return assignInstruction.toString();
                     }
                 }
