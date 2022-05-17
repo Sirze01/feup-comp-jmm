@@ -118,10 +118,10 @@ public class JmmSymbolTableBuilder extends PreorderJmmVisitor<JmmSymbolTable, Bo
                             return;
                         }
                     } else if (Objects.equals(child.getJmmChild(1).getKind(), "_New")) {
-                        if (Objects.equals(child.getJmmChild(1).getKind(), "ArrayExpression")) {
-                            JmmNode arrayNode = child.getJmmChild(0);
-                            if (!Objects.equals(arrayNode.getJmmChild(1).get("type"), "Int")) {
-                                reports.add(new Report(ReportType.ERROR, Stage.SEMANTIC, Integer.parseInt(child.get("line")), Integer.parseInt(child.get("column")), "Create an array without an integer as size"));
+                        JmmNode newNode = child.getJmmChild(1);
+                        if (Objects.equals(newNode.getJmmChild(0).getKind(), "Literal")) {
+                            if (!Objects.equals(newNode.getJmmChild(0).get("type"), "Int")) {
+                                reports.add(new Report(ReportType.ERROR, Stage.SEMANTIC, Integer.parseInt(newNode.get("line")), Integer.parseInt(newNode.get("column")), "Create an array without an integer as size"));
                                 return;
                             }
                         }
