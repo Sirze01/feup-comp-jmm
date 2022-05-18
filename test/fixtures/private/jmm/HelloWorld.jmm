@@ -36,9 +36,11 @@ class HelloWorld extends HelloClass{
         return this;
     }
 
-    public boolean sayHello(Int nr, String args, String hello) {
-            int[] b;
+    public int[] sayHello(Int nr, String args, String hello) {
+            String b;
             int a;
+            HelloWorld h;
+
             a = 3;
 
             if (a < 2){
@@ -50,6 +52,7 @@ class HelloWorld extends HelloClass{
 
             c = false;
 
+            h.sayHello(1, b, b).sayHello(1,b,b).sayHello(1,b,b);
             return c;
         }
 }
