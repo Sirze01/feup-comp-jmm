@@ -1,8 +1,10 @@
 package pt.up.fe.comp.analysis;
 
+import org.eclipse.jgit.util.SystemReader;
 import pt.up.fe.comp.jmm.analysis.table.Symbol;
 import pt.up.fe.comp.jmm.analysis.table.SymbolTable;
 import pt.up.fe.comp.jmm.analysis.table.Type;
+import pt.up.fe.comp.jmm.ast.JmmNode;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -18,6 +20,7 @@ public class JmmSymbolTable implements SymbolTable {
 
 
     Map<String, JmmMethod> methods = new HashMap<>();
+    List<JmmMethod> methodsName = new ArrayList<>();
 
 
     public void setClassName(String className) {
@@ -37,6 +40,7 @@ public class JmmSymbolTable implements SymbolTable {
     }
 
     public JmmMethod addMethod(JmmMethod method) {
+        this.methodsName.add(method);
         return this.methods.putIfAbsent(method.toString(), method);
     }
 
@@ -70,11 +74,20 @@ public class JmmSymbolTable implements SymbolTable {
 
     @Override
     public List<String> getMethods() {
+        System.out.println("KKKKKK" + methods);
         return new ArrayList<>(methods.keySet());
     }
 
+    public JmmMethod getMethodByName(String methodName){
+        for (JmmMethod method : methodsName){
+            if (method.getName().equals(methodName))
+                    return method;
+        }
+        return null;
+    }
+
     public JmmMethod getMethodObject(String methodSignature) {
-        return methods.get(methodSignature);
+            return methods.get(methodSignature);
     }
 
     public void printLocalVars() {

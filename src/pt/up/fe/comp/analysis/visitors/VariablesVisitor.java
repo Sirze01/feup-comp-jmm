@@ -1,6 +1,7 @@
 package pt.up.fe.comp.analysis.visitors;
 
 import jas.Var;
+import org.eclipse.jgit.util.SystemReader;
 import pt.up.fe.comp.analysis.JmmSymbolTable;
 import pt.up.fe.comp.jmm.analysis.table.Symbol;
 import pt.up.fe.comp.jmm.analysis.table.SymbolTable;
@@ -11,6 +12,7 @@ import pt.up.fe.comp.jmm.report.Report;
 import pt.up.fe.comp.jmm.report.ReportType;
 import pt.up.fe.comp.jmm.report.Stage;
 
+import javax.swing.*;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -27,6 +29,9 @@ public class VariablesVisitor extends AJmmVisitor<List<Report>, String> {
         addVisit("VarDeclaration", this::visitVarDeclaration);
         addVisit("ID", this::visitID);
         addVisit("_New", this::visitNew);
+        addVisit("MethodBody", this::visitMethodBody);
+        addVisit("AccessExpression", this::visitObjectMethod);
+        addVisit("MethodHeader", this::visitMethodHeader);
         setDefaultVisit(this::defaultVisit);
     }
 
@@ -101,6 +106,42 @@ public class VariablesVisitor extends AJmmVisitor<List<Report>, String> {
 
     private String visitNew(JmmNode jmmNode, List<Report> reports){
         return visit(jmmNode.getJmmChild(0), reports);
+    }
 
+    private String visitObjectMethod(JmmNode node, List<Report> reports){
+        List<JmmNode> children = node.getChildren();
+        System.out.println("lili" + symbolTable.getMethodByName("foo"));
+       if(children.get(0).getKind().equals("Literal") && children.get(0).get("value").equals("this") && symbolTable.getSuper() == null){
+           System.out.println("lala"+symbolTable.getSuper());
+           if (symbolTable.getMethodByName(children.get(1).getJmmChild(0).get("name")) == null){
+               System.out.println("mimi");
+               reports.add(new Report(ReportType.ERROR,
+                       Stage.SEMANTIC,
+                       children.get(1).getJmmChild(0).get("line") != null ? Integer.parseInt(children.get(1).getJmmChild(0).get("line")) : 0,
+                       Integer.parseInt(children.get(1).getJmmChild(0).get("column")),
+                       "Method " + children.get(1).getJmmChild(0).get("name") + "() isn't declared"));
+               return "<Invalid>";
+           } else if (children.get(1).getJmmChild(0).getChildren().size()
+               != symbolTable.getMethodByName(children.get(1).getJmmChild(0).get("name")).getParameters().size()){
+                 reports.add(new Report(ReportType.ERROR,
+                         Stage.SEMANTIC,
+                         children.get(1).getJmmChild(0).get("line") != null ? Integer.parseInt(children.get(1).getJmmChild(0).get("line")) : 0,
+                         Integer.parseInt(children.get(1).getJmmChild(0).get("column")),
+                         "Method " + children.get(1).getJmmChild(0).get("name") + "() has the wrong number of arguments"));
+           }
+       }
+        visit(node.getChildren().get(1).getJmmChild(0), reports);
+        return "Method";
+    }
+
+    private String visitMethodHeader(JmmNode node, List<Report> reports) {
+        JmmNode identifier = node.getChildren().get(0);
+        JmmNode method = node.getChildren().get(1);
+        visit(identifier, reports);
+        return visit(method, reports);
+    }
+    private String visitMethodBody(JmmNode node, List<Report> reports){
+        variables.clear();
+        return defaultVisit(node, reports);
     }
 }

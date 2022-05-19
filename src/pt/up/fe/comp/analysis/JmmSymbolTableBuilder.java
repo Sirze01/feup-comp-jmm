@@ -22,8 +22,8 @@ public class JmmSymbolTableBuilder extends PreorderJmmVisitor<JmmSymbolTable, Bo
         addVisit("ImportDeclaration", this::importDeclarationVisit);
         addVisit("ClassDeclaration", this::classDeclarationVisit);
         addVisit("InheritanceDeclaration", this::inheritanceDeclarationVisit);
-        addVisit("MainMethod", this::mainMethodVisit);
         addVisit("InstanceMethod", this::instanceMethodVisit);
+        addVisit("MainMethod", this::mainMethodVisit);
     }
 
     public List<Report> getReports() {
@@ -67,10 +67,7 @@ public class JmmSymbolTableBuilder extends PreorderJmmVisitor<JmmSymbolTable, Bo
                 Symbol symbol = new Symbol(type, varName);
 
                 symbolTable.addField(symbol);
-
             }
-
-
         }
         return true;
 
@@ -148,13 +145,17 @@ public class JmmSymbolTableBuilder extends PreorderJmmVisitor<JmmSymbolTable, Bo
         JmmMethod e = symbolTable.addMethod(method);
 
         if (e != null) {
-            reports.add(new Report(ReportType.ERROR, Stage.SEMANTIC, Integer.parseInt(methodNode.get("line")), Integer.parseInt(methodNode.get("column")), "Main method already defined. Last definition: " + e));
+            reports.add(new Report(ReportType.ERROR,
+                    Stage.SEMANTIC,
+                    Integer.parseInt(methodNode.get("line")),
+                    Integer.parseInt(methodNode.get("column")),
+                    "Main method already defined. Last definition: " + e));
             return false;
         }
 
         JmmNode methodBody = methodNode.getJmmChild(2);
-        addLocalVars(methodBody, method);
-        addAssignments(methodBody, symbolTable, method);
+        //addLocalVars(methodBody, method);
+        //addAssignments(methodBody, symbolTable, method);
 
         return true;
     }
@@ -164,8 +165,14 @@ public class JmmSymbolTableBuilder extends PreorderJmmVisitor<JmmSymbolTable, Bo
         JmmMethod e = symbolTable.addMethod(method);
 
         if (e != null) {
-            reports.add(new Report(ReportType.ERROR, Stage.SEMANTIC, Integer.parseInt(methodNode.get("line")), Integer.parseInt(methodNode.get("column")), "Method already defined. Last definition: " + e));
+            reports.add(new Report(
+                    ReportType.ERROR,
+                    Stage.SEMANTIC,
+                    Integer.parseInt(methodNode.get("line")),
+                    Integer.parseInt(methodNode.get("column")),
+                    "Method already defined. Last definition: " + e));
         }
+
         JmmNode methodBody = methodNode.getJmmChild(2);
         addLocalVars(methodBody, method);
         addAssignments(methodBody, symbolTable, method);
