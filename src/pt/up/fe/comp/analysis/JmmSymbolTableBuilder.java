@@ -1,5 +1,6 @@
 package pt.up.fe.comp.analysis;
 
+import org.eclipse.jgit.util.SystemReader;
 import pt.up.fe.comp.ast.AstUtils;
 import pt.up.fe.comp.jmm.analysis.table.Symbol;
 import pt.up.fe.comp.jmm.analysis.table.Type;
@@ -13,6 +14,7 @@ import pt.up.fe.comp.jmm.report.Stage;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 public class JmmSymbolTableBuilder extends PreorderJmmVisitor<JmmSymbolTable, Boolean> {
@@ -22,8 +24,9 @@ public class JmmSymbolTableBuilder extends PreorderJmmVisitor<JmmSymbolTable, Bo
         addVisit("ImportDeclaration", this::importDeclarationVisit);
         addVisit("ClassDeclaration", this::classDeclarationVisit);
         addVisit("InheritanceDeclaration", this::inheritanceDeclarationVisit);
-        addVisit("MainMethod", this::mainMethodVisit);
         addVisit("InstanceMethod", this::instanceMethodVisit);
+        addVisit("MainMethod", this::mainMethodVisit);
+        addVisit("VarDeclaration", this::varDeclarationVisit);
     }
 
     public List<Report> getReports() {
@@ -34,10 +37,41 @@ public class JmmSymbolTableBuilder extends PreorderJmmVisitor<JmmSymbolTable, Bo
         String importName = importNode.getChildren().stream().map(id -> id.get("name")).collect(Collectors.joining("."));
 
         if (symbolTable.getImports().contains("importName")) {
-            reports.add(new Report(ReportType.WARNING, Stage.SEMANTIC, Integer.parseInt(importNode.get("line")), Integer.parseInt(importNode.get("column")), "Repeated import statement: " + importName));
+            reports.add(new Report(
+                    ReportType.WARNING,
+                    Stage.SEMANTIC,
+                    Integer.parseInt(importNode.get("line")),
+                    Integer.parseInt(importNode.get("column")),
+                    "Repeated import statement: " + importName));
             return false;
         }
         symbolTable.addImport(importName);
+        return true;
+    }
+
+    private Boolean varDeclarationVisit(JmmNode node, JmmSymbolTable symbolTable){
+        Boolean isMainAncestor = node.getAncestor("MainMethod").isPresent();
+
+        String varName = node.getJmmChild(1).get("name");
+
+        if(isMainAncestor){
+            if (symbolTable.getFieldsMap().containsKey(varName)) {
+                reports.add(new Report(
+                        ReportType.ERROR,
+                        Stage.SEMANTIC,
+                        Integer.parseInt(node.get("line")),
+                        Integer.parseInt(node.get("column")),
+                        "Variable already defined in this scope. Last definition: " + symbolTable.getFieldsMap().get(varName)));
+
+            }
+            else {
+                Type type = AstUtils.getNodeType(node.getJmmChild(0));
+
+                Symbol symbol = new Symbol(type, varName);
+
+                symbolTable.addField(symbol);
+            }
+        }
         return true;
     }
 
@@ -45,34 +79,15 @@ public class JmmSymbolTableBuilder extends PreorderJmmVisitor<JmmSymbolTable, Bo
         String className = classNode.getJmmChild(0).get("name");
         symbolTable.setClassName(className);
 
+        System.out.println(" CLASS:\n" +  classNode);
+
         for (JmmNode node : classNode.getChildren()) {
 
-            System.out.println("--Class Declaration--\n");
             System.out.println(" Node:\n  " + node);
             System.out.println("---------");
             System.out.println("  Tree:\n   " + node.toTree());
-            System.out.println("  Kind:\n   " + node.getKind());
-            System.out.println("---------\n");
-
-
-            if (Objects.equals(node.getKind(), "VarDeclaration")) {
-                String varName = node.getJmmChild(1).get("name");
-                if (symbolTable.getFieldsMap().containsKey(varName)) {
-                    reports.add(new Report(ReportType.ERROR, Stage.SEMANTIC, Integer.parseInt(node.get("line")), Integer.parseInt(node.get("column")), "Variable already defined in this scope. Last definition: " + symbolTable.getFieldsMap().get(varName)));
-                    continue;
-                }
-
-                Type type = AstUtils.getNodeType(node.getJmmChild(0));
-
-                Symbol symbol = new Symbol(type, varName);
-
-                symbolTable.addField(symbol);
-            }
-
-
         }
         return true;
-
     }
 
     private Boolean inheritanceDeclarationVisit(JmmNode inheritanceNode, JmmSymbolTable symbolTable) {
@@ -88,59 +103,52 @@ public class JmmSymbolTableBuilder extends PreorderJmmVisitor<JmmSymbolTable, Bo
                 Symbol se = method.addVar(s);
 
                 if (se != null) {
-                    reports.add(new Report(ReportType.ERROR, Stage.SEMANTIC, Integer.parseInt(child.get("line")), Integer.parseInt(child.get("column")), "Variable already defined in this scope. Last definition: " + se));
-                }/*
-                else{
-                    Type type = AstUtils.getNodeType(child.getJmmChild(0));
-
-                    Symbol symbol = new Symbol(type, varName);
-
-                    symbolTable.addField(symbol);
-                }*/
+                    reports.add(new Report(
+                            ReportType.ERROR,
+                            Stage.SEMANTIC,
+                            Integer.parseInt(child.get("line")),
+                            Integer.parseInt(child.get("column")),
+                            "Variable already defined in this scope. Last definition: " + se));
+                }
             }
         }
     }
 
     private void addAssignments(JmmNode methodBody, JmmSymbolTable symbolTable, JmmMethod method) {
+        /*for (JmmNode child : methodBody.getChildren()) {
+            if (child.getKind().equals("Statement")) {
+                child = child.getJmmChild(0);
+                if (Objects.equals(child.getKind(), "IDAssignment")) {
 
-        for (JmmNode child : methodBody.getChildren()) {
-            if (Objects.equals(child.getKind(), "IDAssignment")) {
-                String varName = child.getJmmChild(0).get("name");
-                if (Objects.equals(child.getJmmChild(1).getKind(), "ArrayExpression")) {
-                    JmmNode arrayNode = child.getJmmChild(1);
-                    if (!Objects.equals(arrayNode.getJmmChild(1).get("type"), "Int")) {
-                        reports.add(new Report(ReportType.ERROR, Stage.SEMANTIC, Integer.parseInt(child.get("line")), Integer.parseInt(child.get("column")), "Indexed an array without using an integer"));
-                        return;
-                    }
-                } else if (Objects.equals(child.getJmmChild(1).getKind(), "_New")){
+                    String varName = child.getJmmChild(0).get("name");
                     if (Objects.equals(child.getJmmChild(1).getKind(), "ArrayExpression")) {
-                        JmmNode arrayNode = child.getJmmChild(0);
+                        JmmNode arrayNode = child.getJmmChild(1);
                         if (!Objects.equals(arrayNode.getJmmChild(1).get("type"), "Int")) {
-                            reports.add(new Report(ReportType.ERROR, Stage.SEMANTIC, Integer.parseInt(child.get("line")), Integer.parseInt(child.get("column")), "Create an array without an integer as size"));
+                            reports.add(new Report(ReportType.ERROR, Stage.SEMANTIC, Integer.parseInt(child.get("line")), Integer.parseInt(child.get("column")), "Indexed an array without using an integer"));
                             return;
                         }
-                    }
-                } else if (child.getJmmChild(1).getAttributes().contains("type")) {
-                     if (!Objects.equals(child.getJmmChild(1).get("type"), method.getVars().get(0).getType().getName())) {
+                    } else if (Objects.equals(child.getJmmChild(1).getKind(), "_New")) {
+                        JmmNode newNode = child.getJmmChild(1);
+                        if (Objects.equals(newNode.getJmmChild(0).getKind(), "Literal")) {
+                            if (!Objects.equals(newNode.getJmmChild(0).get("type"), "Int")) {
+                                reports.add(new Report(ReportType.ERROR, Stage.SEMANTIC, Integer.parseInt(newNode.get("line")), Integer.parseInt(newNode.get("column")), "Create an array without an integer as size"));
+                                return;
+                            }
+                        }
+                    } else if (child.getJmmChild(1).getAttributes().contains("type")) {
+                        if (!Objects.equals(child.getJmmChild(1).get("type"), method.getVars().get(0).getType().getName())) {
                             reports.add(new Report(ReportType.ERROR, Stage.SEMANTIC, Integer.parseInt(child.get("line")), Integer.parseInt(child.get("column")), "Assigned variable '" + varName + "' with different type value"));
                             return;
-                     }
-                     else {
+                        }
+                    } else {
                         String assignedVarName = child.getJmmChild(1).get("name");
-
-                        Type type = AstUtils.getNodeType(child.getJmmChild(0));
-
-                        Symbol symbol = new Symbol(type, assignedVarName);
-
-                        symbolTable.addField(symbol);
+                        reports.add(new Report(ReportType.ERROR, Stage.SEMANTIC, Integer.parseInt(child.get("line")), Integer.parseInt(child.get("column")), "Assigned undefined variable '" + assignedVarName + "'"));
+                        return;
                     }
-                } else {
-                    String assignedVarName = child.getJmmChild(1).get("name");
-                    reports.add(new Report(ReportType.ERROR, Stage.SEMANTIC, Integer.parseInt(child.get("line")), Integer.parseInt(child.get("column")), "Assigned undefined variable '" + assignedVarName + "'"));
-                    return;
                 }
+
             }
-        }
+        }*/
     }
 
 
@@ -151,13 +159,16 @@ public class JmmSymbolTableBuilder extends PreorderJmmVisitor<JmmSymbolTable, Bo
         JmmMethod e = symbolTable.addMethod(method);
 
         if (e != null) {
-            reports.add(new Report(ReportType.ERROR, Stage.SEMANTIC, Integer.parseInt(methodNode.get("line")), Integer.parseInt(methodNode.get("column")), "Main method already defined. Last definition: " + e));
+            reports.add(new Report(ReportType.ERROR,
+                    Stage.SEMANTIC,
+                    Integer.parseInt(methodNode.get("line")),
+                    Integer.parseInt(methodNode.get("column")),
+                    "Main method already defined. Last definition: " + e));
             return false;
         }
 
         JmmNode methodBody = methodNode.getJmmChild(2);
         addLocalVars(methodBody, method);
-        addAssignments(methodBody, symbolTable, method);
 
         return true;
     }
@@ -165,8 +176,14 @@ public class JmmSymbolTableBuilder extends PreorderJmmVisitor<JmmSymbolTable, Bo
     private Boolean instanceMethodVisit(JmmNode methodNode, JmmSymbolTable symbolTable) {
         JmmMethod method = generateMethod(methodNode);
         JmmMethod e = symbolTable.addMethod(method);
+
         if (e != null) {
-            reports.add(new Report(ReportType.ERROR, Stage.SEMANTIC, Integer.parseInt(methodNode.get("line")), Integer.parseInt(methodNode.get("column")), "Method already defined. Last definition: " + e));
+            reports.add(new Report(
+                    ReportType.ERROR,
+                    Stage.SEMANTIC,
+                    Integer.parseInt(methodNode.get("line")),
+                    Integer.parseInt(methodNode.get("column")),
+                    "Method already defined. Last definition: " + e));
         }
 
         JmmNode methodBody = methodNode.getJmmChild(2);
