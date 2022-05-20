@@ -6,10 +6,7 @@ import pt.up.fe.comp.jmm.analysis.table.SymbolTable;
 import pt.up.fe.comp.jmm.analysis.table.Type;
 import pt.up.fe.comp.jmm.ast.JmmNode;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class JmmSymbolTable implements SymbolTable {
     List<String> imports = new ArrayList<>();
@@ -145,18 +142,18 @@ public class JmmSymbolTable implements SymbolTable {
 
     public JmmMethod getParentMethodName(JmmNode jmmNode){
 
-        JmmNode jmmParent = jmmNode.getJmmParent();
+            Optional<JmmNode> methodBody = jmmNode.getAncestor("MethodBody");
 
-        while (!jmmParent.getKind().equals("MethodBody"))
-            jmmParent = jmmParent.getJmmParent();
+            if (methodBody.isEmpty()) {
+                return null;
+            }
 
-        String methodName;
-        if (jmmParent.getJmmParent().getKind().equals("MainMethod"))
-            methodName = "main";
-        else
-            methodName = jmmParent.getJmmParent().getJmmChild(0).get("name");
+            if (methodBody.get().getJmmParent().getKind().equals("MainMethod")) {
+                return getMethodByName("main");
+            }
 
-        return getMethodByName(methodName);
+            return getMethodByName(methodBody.get().getJmmParent().getJmmChild(0).getJmmChild(1).get("name"));
+
 
     }
 }

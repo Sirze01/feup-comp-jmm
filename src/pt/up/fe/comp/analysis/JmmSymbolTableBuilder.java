@@ -159,8 +159,8 @@ public class JmmSymbolTableBuilder extends PreorderJmmVisitor<JmmSymbolTable, Bo
         }
 
         JmmNode methodBody = methodNode.getJmmChild(2);
-        //addLocalVars(methodBody, method);
-        //addAssignments(methodBody, symbolTable, method);
+        addLocalVars(methodBody, method);
+        addAssignments(methodBody, symbolTable, method);
 
         return true;
     }
