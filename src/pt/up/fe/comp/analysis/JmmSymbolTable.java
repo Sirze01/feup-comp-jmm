@@ -45,7 +45,7 @@ public class JmmSymbolTable implements SymbolTable {
         return fields;
     }
 
-    public static boolean isMain(String methodSignature){
+    public static boolean isMain(String methodSignature) {
         return methodSignature.equals(new JmmMethod("main", new Type("void", false), List.of(new Symbol(new Type("String", true), "any"))).toString());
     }
 
@@ -74,16 +74,16 @@ public class JmmSymbolTable implements SymbolTable {
         return new ArrayList<>(methods.keySet());
     }
 
-    public JmmMethod getMethodByName(String methodName){
-        for (JmmMethod method : methodsName){
+    public JmmMethod getMethodByName(String methodName) {
+        for (JmmMethod method : methodsName) {
             if (method.getName().equals(methodName))
-                    return method;
+                return method;
         }
         return null;
     }
 
-    public Symbol getFieldByName(String fieldName){
-        for (Symbol field : fields.values()){
+    public Symbol getFieldByName(String fieldName) {
+        for (Symbol field : fields.values()) {
             if (field.getName().equals(fieldName))
                 return field;
         }
@@ -91,7 +91,7 @@ public class JmmSymbolTable implements SymbolTable {
     }
 
     public JmmMethod getMethodObject(String methodSignature) {
-            return methods.get(methodSignature);
+        return methods.get(methodSignature);
     }
 
     public void printLocalVars() {
@@ -140,20 +140,17 @@ public class JmmSymbolTable implements SymbolTable {
         return null;
     }
 
-    public JmmMethod getParentMethodName(JmmNode jmmNode){
+    public JmmMethod getParentMethodName(JmmNode jmmNode) {
+        Optional<JmmNode> methodBody = jmmNode.getAncestor("MethodBody");
 
-            Optional<JmmNode> methodBody = jmmNode.getAncestor("MethodBody");
+        if (methodBody.isEmpty()) {
+            return null;
+        }
 
-            if (methodBody.isEmpty()) {
-                return null;
-            }
+        if (methodBody.get().getJmmParent().getKind().equals("MainMethod")) {
+            return getMethodByName("main");
+        }
 
-            if (methodBody.get().getJmmParent().getKind().equals("MainMethod")) {
-                return getMethodByName("main");
-            }
-
-            return getMethodByName(methodBody.get().getJmmParent().getJmmChild(0).getJmmChild(1).get("name"));
-
-
+        return getMethodByName(methodBody.get().getJmmParent().getJmmChild(0).getJmmChild(1).get("name"));
     }
 }

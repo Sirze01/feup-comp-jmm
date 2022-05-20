@@ -21,7 +21,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
-public class VariablesVisitor extends PreorderJmmVisitor<List<Report>, String> {
+public class VariablesVisitor extends AJmmVisitor<List<Report>, String> {
     JmmSymbolTable symbolTable;
     List<String> variables;
 
@@ -132,41 +132,39 @@ public class VariablesVisitor extends PreorderJmmVisitor<List<Report>, String> {
     }
 
     private String visitID(JmmNode jmmNode, List<Report> reports){
-
-            Optional<JmmNode> ancestor = jmmNode.getAncestor("MainMethod").isPresent() ? jmmNode.getAncestor("MainMethod") : jmmNode.getAncestor("MethodBody");
+        Optional<JmmNode> ancestor = jmmNode.getAncestor("MainMethod").isPresent() ? jmmNode.getAncestor("MainMethod") : jmmNode.getAncestor("MethodBody");
 
             if (ancestor.isEmpty())
                 return "";
 
             JmmMethod method = symbolTable.getParentMethodName(jmmNode);
 
-            if (method == null){
-                if (!checkImports(jmmNode.get("name"))) {
-                    reports.add(new Report(
-                            ReportType.ERROR, Stage.SEMANTIC,
-                            Integer.parseInt(jmmNode.get("line")),
-                            Integer.parseInt(jmmNode.get("column")),
-                            "Variable \"" + jmmNode.get("name") + "\" is undefined."
-                    ));
-                    return "<Invalid>";
-                }
-                return "";
+        if (method == null){
+            if (!checkImports(jmmNode.get("name"))) {
+                reports.add(new Report(
+                        ReportType.ERROR, Stage.SEMANTIC,
+                        Integer.parseInt(jmmNode.get("line")),
+                        Integer.parseInt(jmmNode.get("column")),
+                        "Variable \"" + jmmNode.get("name") + "\" is undefined."
+                ));
+                return "<Invalid>";
             }
+            return "";
+        }
 
-            Optional<String> name = jmmNode.getOptional("name");
-            if(name.isEmpty()){
-                return "";
-            }
+        Optional<String> name = jmmNode.getOptional("name");
+        if(name.isEmpty()){
+            return "";
+        }
 
-            Symbol s = symbolTable.getLocalVar(method.toString(), name.get());
+        Symbol s = symbolTable.getLocalVar(method.toString(), name.get());
 
-            checkInitializedVariable(jmmNode, reports, method, s);
+        //checkInitializedVariable(jmmNode, reports, method, s);
 
             String ret = "<Invalid>";
             if (s != null)
                 ret = s.getType().isArray() ? s.getType().getName() + "ArrayExpression" : s.getType().getName();
             return ret;
-
     }
 
     private String visitObjectMethod(JmmNode node, List<Report> reports){
@@ -189,7 +187,7 @@ public class VariablesVisitor extends PreorderJmmVisitor<List<Report>, String> {
            visit(node.getChildren().get(1).getJmmChild(0), reports);
            return "";
        }
-       //visit(node.getChildren().get(1).getJmmChild(0), reports);
+
        return "Method";
     }
 
@@ -217,7 +215,6 @@ public class VariablesVisitor extends PreorderJmmVisitor<List<Report>, String> {
                 //Symbol symbol = node.getAncestor("MainMethod").isPresent() ? symbolTable.getFieldByName(varName) : symbolTable.getLocalVar(varName, methodName) ;
             }
         }
-
 
         return "";
     }

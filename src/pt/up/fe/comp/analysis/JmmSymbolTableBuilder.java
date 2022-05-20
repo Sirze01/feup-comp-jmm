@@ -51,11 +51,6 @@ public class JmmSymbolTableBuilder extends PreorderJmmVisitor<JmmSymbolTable, Bo
         symbolTable.setClassName(className);
 
         for (JmmNode node : classNode.getChildren()) {
-
-            System.out.println(" Node:\n  " + node);
-            System.out.println("---------");
-            System.out.println("  Tree:\n   " + node.toTree());
-
             if (Objects.equals(node.getKind(), "VarDeclaration")) {
                 String varName = node.getJmmChild(1).get("name");
                 if (symbolTable.getFieldsMap().containsKey(varName)) {
@@ -97,52 +92,6 @@ public class JmmSymbolTableBuilder extends PreorderJmmVisitor<JmmSymbolTable, Bo
         }
     }
 
-    private void addAssignments(JmmNode methodBody, JmmSymbolTable symbolTable, JmmMethod method) {
-        for (JmmNode child : methodBody.getChildren()) {
-            if (child.getKind().equals("Statement")) {
-                child = child.getJmmChild(0);
-                if (Objects.equals(child.getKind(), "IDAssignment")) {
-
-                    String varName = child.getJmmChild(0).get("name");
-                    if (Objects.equals(child.getJmmChild(1).getKind(), "ArrayExpression")) {
-                        JmmNode arrayNode = child.getJmmChild(1);
-                        if (!Objects.equals(arrayNode.getJmmChild(1).get("type"), "Int")) {
-                            reports.add(new Report(ReportType.ERROR, Stage.SEMANTIC, Integer.parseInt(child.get("line")), Integer.parseInt(child.get("column")), "Indexed an array without using an integer"));
-                            return;
-                        }
-                    } else if (Objects.equals(child.getJmmChild(1).getKind(), "_New")) {
-                        JmmNode newNode = child.getJmmChild(1);
-                        if (Objects.equals(newNode.getJmmChild(0).getKind(), "Literal")) {
-                            if (!Objects.equals(newNode.getJmmChild(0).get("type"), "Int")) {
-                                reports.add(new Report(ReportType.ERROR, Stage.SEMANTIC, Integer.parseInt(newNode.get("line")), Integer.parseInt(newNode.get("column")), "Create an array without an integer as size"));
-                                return;
-                            }
-                        }
-                    } else if (child.getJmmChild(1).getAttributes().contains("type")) {
-                        if (!Objects.equals(child.getJmmChild(1).get("type"), method.getVars().get(0).getType().getName())) {
-                            reports.add(new Report(ReportType.ERROR, Stage.SEMANTIC, Integer.parseInt(child.get("line")), Integer.parseInt(child.get("column")), "Assigned variable '" + varName + "' with different type value"));
-                            return;
-                        } else {
-                            String assignedVarName = child.getJmmChild(1).get("name");
-
-                            Type type = AstUtils.getNodeType(child.getJmmChild(0));
-
-                            Symbol symbol = new Symbol(type, assignedVarName);
-
-                            symbolTable.addField(symbol);
-                        }
-                    } else {
-                        String assignedVarName = child.getJmmChild(1).get("name");
-                        reports.add(new Report(ReportType.ERROR, Stage.SEMANTIC, Integer.parseInt(child.get("line")), Integer.parseInt(child.get("column")), "Assigned undefined variable '" + assignedVarName + "'"));
-                        return;
-                    }
-                }
-
-            }
-        }
-    }
-
-
     private Boolean mainMethodVisit(JmmNode methodNode, JmmSymbolTable symbolTable) {
         String parameterName = methodNode.getJmmChild(1).get("name");
 
@@ -160,7 +109,6 @@ public class JmmSymbolTableBuilder extends PreorderJmmVisitor<JmmSymbolTable, Bo
 
         JmmNode methodBody = methodNode.getJmmChild(2);
         addLocalVars(methodBody, method);
-        addAssignments(methodBody, symbolTable, method);
 
         return true;
     }
@@ -180,7 +128,6 @@ public class JmmSymbolTableBuilder extends PreorderJmmVisitor<JmmSymbolTable, Bo
 
         JmmNode methodBody = methodNode.getJmmChild(2);
         addLocalVars(methodBody, method);
-        addAssignments(methodBody, symbolTable, method);
 
         return true;
     }
