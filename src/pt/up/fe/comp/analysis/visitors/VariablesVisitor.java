@@ -33,7 +33,6 @@ public class VariablesVisitor extends AJmmVisitor<List<Report>, String> {
         addVisit("AccessExpression", this::visitObjectMethod);
         addVisit("CallExpression", this::visitCallMethod);
         addVisit("MemberArgs", this::visitMemberArgs);
-
         addVisit("IDAssignment", this::visitIDAssignment);
         addVisit("InheritanceDeclaration", this::visitInheritance);
         addVisit("MethodBody", this::visitMethodBody);
@@ -57,6 +56,7 @@ public class VariablesVisitor extends AJmmVisitor<List<Report>, String> {
         System.out.println("Herança");
         return "";
     }
+
 
     private String visitArrayExp(JmmNode node, List<Report> reports){
         for(JmmNode children : node.getChildren()){
@@ -280,7 +280,7 @@ public class VariablesVisitor extends AJmmVisitor<List<Report>, String> {
                                     symbolTable.getMethodByName(methodName).getParameters().get(i).getType().getName() + " expected at " +  methodName + " method."));
                 }
             }
-            else if (i < symbolTable.getMethodByName(methodName).getParameters().size() && !symbolTable.getMethodByName(methodName).getParameters().get(i).getType().getName().equals(child.get("type"))) {
+            else if (symbolTable.getMethodByName(methodName) != null  && i < symbolTable.getMethodByName(methodName).getParameters().size() && !symbolTable.getMethodByName(methodName).getParameters().get(i).getType().getName().equals(child.get("type"))) {
                 reports.add(new Report(ReportType.ERROR,
                         Stage.SEMANTIC, child.get("line") != null ? Integer.parseInt(child.get("line")) : 0,
                         Integer.parseInt(child.get("column")),
