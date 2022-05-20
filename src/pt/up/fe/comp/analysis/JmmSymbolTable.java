@@ -74,7 +74,6 @@ public class JmmSymbolTable implements SymbolTable {
 
     @Override
     public List<String> getMethods() {
-        System.out.println("KKKKKK" + methods);
         return new ArrayList<>(methods.keySet());
     }
 
@@ -82,6 +81,14 @@ public class JmmSymbolTable implements SymbolTable {
         for (JmmMethod method : methodsName){
             if (method.getName().equals(methodName))
                     return method;
+        }
+        return null;
+    }
+
+    public Symbol getFieldByName(String fieldName){
+        for (Symbol field : fields.values()){
+            if (field.getName().equals(fieldName))
+                return field;
         }
         return null;
     }
@@ -134,5 +141,22 @@ public class JmmSymbolTable implements SymbolTable {
         }
 
         return null;
+    }
+
+    public JmmMethod getParentMethodName(JmmNode jmmNode){
+
+        JmmNode jmmParent = jmmNode.getJmmParent();
+
+        while (!jmmParent.getKind().equals("MethodBody"))
+            jmmParent = jmmParent.getJmmParent();
+
+        String methodName;
+        if (jmmParent.getJmmParent().getKind().equals("MainMethod"))
+            methodName = "main";
+        else
+            methodName = jmmParent.getJmmParent().getJmmChild(0).get("name");
+
+        return getMethodByName(methodName);
+
     }
 }

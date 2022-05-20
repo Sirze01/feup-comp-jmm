@@ -34,7 +34,12 @@ public class JmmSymbolTableBuilder extends PreorderJmmVisitor<JmmSymbolTable, Bo
         String importName = importNode.getChildren().stream().map(id -> id.get("name")).collect(Collectors.joining("."));
 
         if (symbolTable.getImports().contains("importName")) {
-            reports.add(new Report(ReportType.WARNING, Stage.SEMANTIC, Integer.parseInt(importNode.get("line")), Integer.parseInt(importNode.get("column")), "Repeated import statement: " + importName));
+            reports.add(new Report(
+                    ReportType.WARNING,
+                    Stage.SEMANTIC,
+                    Integer.parseInt(importNode.get("line")),
+                    Integer.parseInt(importNode.get("column")),
+                    "Repeated import statement: " + importName));
             return false;
         }
         symbolTable.addImport(importName);
