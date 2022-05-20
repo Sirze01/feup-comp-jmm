@@ -1,5 +1,6 @@
 package pt.up.fe.comp.analysis;
 
+import org.eclipse.jgit.util.SystemReader;
 import pt.up.fe.comp.ast.AstUtils;
 import pt.up.fe.comp.jmm.analysis.table.Symbol;
 import pt.up.fe.comp.jmm.analysis.table.Type;
@@ -13,6 +14,7 @@ import pt.up.fe.comp.jmm.report.Stage;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 public class JmmSymbolTableBuilder extends PreorderJmmVisitor<JmmSymbolTable, Boolean> {
@@ -24,6 +26,7 @@ public class JmmSymbolTableBuilder extends PreorderJmmVisitor<JmmSymbolTable, Bo
         addVisit("InheritanceDeclaration", this::inheritanceDeclarationVisit);
         addVisit("InstanceMethod", this::instanceMethodVisit);
         addVisit("MainMethod", this::mainMethodVisit);
+        addVisit("VarDeclaration", this::varDeclarationVisit);
     }
 
     public List<Report> getReports() {
@@ -46,6 +49,32 @@ public class JmmSymbolTableBuilder extends PreorderJmmVisitor<JmmSymbolTable, Bo
         return true;
     }
 
+    private Boolean varDeclarationVisit(JmmNode node, JmmSymbolTable symbolTable){
+        Boolean isMainAncestor = node.getAncestor("MainMethod").isPresent();
+
+        String varName = node.getJmmChild(1).get("name");
+
+        if(isMainAncestor){
+            if (symbolTable.getFieldsMap().containsKey(varName)) {
+                reports.add(new Report(
+                        ReportType.ERROR,
+                        Stage.SEMANTIC,
+                        Integer.parseInt(node.get("line")),
+                        Integer.parseInt(node.get("column")),
+                        "Variable already defined in this scope. Last definition: " + symbolTable.getFieldsMap().get(varName)));
+
+            }
+            else {
+                Type type = AstUtils.getNodeType(node.getJmmChild(0));
+
+                Symbol symbol = new Symbol(type, varName);
+
+                symbolTable.addField(symbol);
+            }
+        }
+        return true;
+    }
+
     private Boolean classDeclarationVisit(JmmNode classNode, JmmSymbolTable symbolTable) {
         String className = classNode.getJmmChild(0).get("name");
         symbolTable.setClassName(className);
@@ -55,27 +84,8 @@ public class JmmSymbolTableBuilder extends PreorderJmmVisitor<JmmSymbolTable, Bo
             System.out.println(" Node:\n  " + node);
             System.out.println("---------");
             System.out.println("  Tree:\n   " + node.toTree());
-
-            if (Objects.equals(node.getKind(), "VarDeclaration")) {
-                String varName = node.getJmmChild(1).get("name");
-                if (symbolTable.getFieldsMap().containsKey(varName)) {
-                    reports.add(new Report(
-                            ReportType.ERROR,
-                            Stage.SEMANTIC,
-                            Integer.parseInt(node.get("line")),
-                            Integer.parseInt(node.get("column")),
-                            "Variable already defined in this scope. Last definition: " + symbolTable.getFieldsMap().get(varName)));
-                    continue;
-                }
-                Type type = AstUtils.getNodeType(node.getJmmChild(0));
-
-                Symbol symbol = new Symbol(type, varName);
-
-                symbolTable.addField(symbol);
-            }
         }
         return true;
-
     }
 
     private Boolean inheritanceDeclarationVisit(JmmNode inheritanceNode, JmmSymbolTable symbolTable) {
@@ -91,14 +101,19 @@ public class JmmSymbolTableBuilder extends PreorderJmmVisitor<JmmSymbolTable, Bo
                 Symbol se = method.addVar(s);
 
                 if (se != null) {
-                    reports.add(new Report(ReportType.ERROR, Stage.SEMANTIC, Integer.parseInt(child.get("line")), Integer.parseInt(child.get("column")), "Variable already defined in this scope. Last definition: " + se));
+                    reports.add(new Report(
+                            ReportType.ERROR,
+                            Stage.SEMANTIC,
+                            Integer.parseInt(child.get("line")),
+                            Integer.parseInt(child.get("column")),
+                            "Variable already defined in this scope. Last definition: " + se));
                 }
             }
         }
     }
 
     private void addAssignments(JmmNode methodBody, JmmSymbolTable symbolTable, JmmMethod method) {
-        for (JmmNode child : methodBody.getChildren()) {
+        /*for (JmmNode child : methodBody.getChildren()) {
             if (child.getKind().equals("Statement")) {
                 child = child.getJmmChild(0);
                 if (Objects.equals(child.getKind(), "IDAssignment")) {
@@ -122,14 +137,6 @@ public class JmmSymbolTableBuilder extends PreorderJmmVisitor<JmmSymbolTable, Bo
                         if (!Objects.equals(child.getJmmChild(1).get("type"), method.getVars().get(0).getType().getName())) {
                             reports.add(new Report(ReportType.ERROR, Stage.SEMANTIC, Integer.parseInt(child.get("line")), Integer.parseInt(child.get("column")), "Assigned variable '" + varName + "' with different type value"));
                             return;
-                        } else {
-                            String assignedVarName = child.getJmmChild(1).get("name");
-
-                            Type type = AstUtils.getNodeType(child.getJmmChild(0));
-
-                            Symbol symbol = new Symbol(type, assignedVarName);
-
-                            symbolTable.addField(symbol);
                         }
                     } else {
                         String assignedVarName = child.getJmmChild(1).get("name");
@@ -139,7 +146,7 @@ public class JmmSymbolTableBuilder extends PreorderJmmVisitor<JmmSymbolTable, Bo
                 }
 
             }
-        }
+        }*/
     }
 
 
@@ -160,7 +167,6 @@ public class JmmSymbolTableBuilder extends PreorderJmmVisitor<JmmSymbolTable, Bo
 
         JmmNode methodBody = methodNode.getJmmChild(2);
         addLocalVars(methodBody, method);
-        addAssignments(methodBody, symbolTable, method);
 
         return true;
     }

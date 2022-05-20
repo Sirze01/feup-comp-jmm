@@ -130,6 +130,7 @@ public class JmmSymbolTable implements SymbolTable {
     }
 
     public Symbol getLocalVar(String methodSignature, String varName) {
+        if(methods.get(methodSignature) == null) return null;
         for (Symbol s : methods.get(methodSignature).getVars()) {
             if (varName.equals(s.getName())) {
                 return s;
