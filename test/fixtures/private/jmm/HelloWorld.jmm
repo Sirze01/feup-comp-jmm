@@ -22,7 +22,11 @@ class HelloWorld extends HelloClass{
 
 	public int sayHello(String args) {
 	    int a;
+	    int c;
+	    int d;
         ioPlus.printHelloWorld();
+
+        c = ioPlus.getInt(1);
         return args;
     }
 

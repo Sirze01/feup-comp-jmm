@@ -15,6 +15,7 @@ import pt.up.fe.comp.jmm.report.Stage;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 public class OllirExpressionGenerator extends AJmmVisitor<Boolean, String> {
@@ -169,7 +170,7 @@ public class OllirExpressionGenerator extends AJmmVisitor<Boolean, String> {
 
         Symbol s = findSymbol(assignmentNode.getJmmChild(0));
 
-
+        assert s != null;
         String idx = "tmp" + tempCount[0]++ + ".i32";
         before.append(" ".repeat(getNumSpaces(indent)));
         before.append(idx + " :=.i32 " + visit(assignmentNode.getJmmChild(1).getJmmChild(0)) + ";\n");
@@ -378,7 +379,6 @@ public class OllirExpressionGenerator extends AJmmVisitor<Boolean, String> {
             return "arraylength(" + exp + ").i32" + after;
         }
 
-        // Todo: check if id is symbol of this class and if not check in imports, null otherwise Done
         List<Symbol> parameterSymbols = new ArrayList<>();
         for (JmmNode node : accessNode.getJmmChild(1).getJmmChild(1).getChildren()) {
             if (node.getKind().equals("Literal")) {
@@ -418,14 +418,26 @@ public class OllirExpressionGenerator extends AJmmVisitor<Boolean, String> {
                         .map(this::visit).collect(Collectors.joining(", "));
 
         if (methods.size() == 0) {
-            // ToDo: Infer return type from variable to assign
+            Optional<JmmNode> ancestor = accessNode.getAncestor("IDAssignment");
+            if(ancestor.isPresent()){
+                Symbol variable = findSymbol(ancestor.get().getJmmChild(0));
+                assert variable != null;
+                String type = OllirGeneratorUtils.toOllirType(variable.getType());
+
+                accessNode.put("ollirType", type);
+                accessStmt.append("invokestatic(" +
+                        exp + ", \"" +
+                        accessNode.getJmmChild(1).getJmmChild(0).get("name") + "\"" + parameters + ")." + type);
+
+                return accessStmt + after;
+            }
 
             accessNode.put("ollirType", ".V");
             accessStmt.append("invokestatic(" +
                     exp + ", \"" +
                     accessNode.getJmmChild(1).getJmmChild(0).get("name") + "\"" + parameters + ").V");
 
-            return accessStmt.toString() + after;
+            return accessStmt + after;
         }
 
 
@@ -436,9 +448,8 @@ public class OllirExpressionGenerator extends AJmmVisitor<Boolean, String> {
                     exp + ", \"" +
                     accessNode.getJmmChild(1).getJmmChild(0).get("name") + "\"" +
                     parameters + ")." + type);
-            return accessStmt.toString() + after;
+            return accessStmt + after;
         }
-        // ToDo: Add support to type inference
         return "";
     }
 
