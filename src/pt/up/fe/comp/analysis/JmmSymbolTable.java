@@ -6,10 +6,7 @@ import pt.up.fe.comp.jmm.analysis.table.SymbolTable;
 import pt.up.fe.comp.jmm.analysis.table.Type;
 import pt.up.fe.comp.jmm.ast.JmmNode;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class JmmSymbolTable implements SymbolTable {
     List<String> imports = new ArrayList<>();
@@ -48,7 +45,7 @@ public class JmmSymbolTable implements SymbolTable {
         return fields;
     }
 
-    public static boolean isMain(String methodSignature){
+    public static boolean isMain(String methodSignature) {
         return methodSignature.equals(new JmmMethod("main", new Type("void", false), List.of(new Symbol(new Type("String", true), "any"))).toString());
     }
 
@@ -77,16 +74,16 @@ public class JmmSymbolTable implements SymbolTable {
         return new ArrayList<>(methods.keySet());
     }
 
-    public JmmMethod getMethodByName(String methodName){
-        for (JmmMethod method : methodsName){
+    public JmmMethod getMethodByName(String methodName) {
+        for (JmmMethod method : methodsName) {
             if (method.getName().equals(methodName))
-                    return method;
+                return method;
         }
         return null;
     }
 
-    public Symbol getFieldByName(String fieldName){
-        for (Symbol field : fields.values()){
+    public Symbol getFieldByName(String fieldName) {
+        for (Symbol field : fields.values()) {
             if (field.getName().equals(fieldName))
                 return field;
         }
@@ -94,7 +91,7 @@ public class JmmSymbolTable implements SymbolTable {
     }
 
     public JmmMethod getMethodObject(String methodSignature) {
-            return methods.get(methodSignature);
+        return methods.get(methodSignature);
     }
 
     public void printLocalVars() {
@@ -143,20 +140,17 @@ public class JmmSymbolTable implements SymbolTable {
         return null;
     }
 
-    public JmmMethod getParentMethodName(JmmNode jmmNode){
+    public JmmMethod getParentMethodName(JmmNode jmmNode) {
+        Optional<JmmNode> methodBody = jmmNode.getAncestor("MethodBody");
 
-        JmmNode jmmParent = jmmNode.getJmmParent();
+        if (methodBody.isEmpty()) {
+            return null;
+        }
 
-        while (!jmmParent.getKind().equals("MethodBody"))
-            jmmParent = jmmParent.getJmmParent();
+        if (methodBody.get().getJmmParent().getKind().equals("MainMethod")) {
+            return getMethodByName("main");
+        }
 
-        String methodName;
-        if (jmmParent.getJmmParent().getKind().equals("MainMethod"))
-            methodName = "main";
-        else
-            methodName = jmmParent.getJmmParent().getJmmChild(0).get("name");
-
-        return getMethodByName(methodName);
-
+        return getMethodByName(methodBody.get().getJmmParent().getJmmChild(0).getJmmChild(1).get("name"));
     }
 }

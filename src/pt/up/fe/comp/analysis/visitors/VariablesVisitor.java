@@ -122,7 +122,6 @@ public class VariablesVisitor extends PreorderJmmVisitor<List<Report>, String> {
     }
 
     private String visitID(JmmNode jmmNode, List<Report> reports){
-
         Optional<JmmNode> ancestor = jmmNode.getAncestor("MainMethod").isPresent() ? jmmNode.getAncestor("MainMethod") : jmmNode.getAncestor("MethodBody");
 
         if (ancestor.isEmpty())
@@ -130,17 +129,25 @@ public class VariablesVisitor extends PreorderJmmVisitor<List<Report>, String> {
 
         JmmMethod method = symbolTable.getParentMethodName(jmmNode);
 
-        Symbol s = symbolTable.getLocalVar(method.toString(), jmmNode.get("name"));
-
-        if (s == null && !checkImports(jmmNode.get("name"))) {
-            reports.add(new Report(
-                    ReportType.ERROR, Stage.SEMANTIC,
-                    Integer.parseInt(jmmNode.get("line")),
-                    Integer.parseInt(jmmNode.get("column")),
-                    "Variable \"" + jmmNode.get("name") + "\" is undefined."
-            ));
-            return "<Invalid>";
+        if (method == null){
+            if (!checkImports(jmmNode.get("name"))) {
+                reports.add(new Report(
+                        ReportType.ERROR, Stage.SEMANTIC,
+                        Integer.parseInt(jmmNode.get("line")),
+                        Integer.parseInt(jmmNode.get("column")),
+                        "Variable \"" + jmmNode.get("name") + "\" is undefined."
+                ));
+                return "<Invalid>";
+            }
+            return "";
         }
+
+        Optional<String> name = jmmNode.getOptional("name");
+        if(name.isEmpty()){
+            return "";
+        }
+
+        Symbol s = symbolTable.getLocalVar(method.toString(), name.get());
 
         checkInitializedVariable(jmmNode, reports, method, s);
 
@@ -149,6 +156,7 @@ public class VariablesVisitor extends PreorderJmmVisitor<List<Report>, String> {
             ret = s.getType().isArray() ? s.getType().getName() + "ArrayExpression" : s.getType().getName();
         return ret;
     }
+
 
     private String visitNew(JmmNode jmmNode, List<Report> reports){
         return visit(jmmNode.getJmmChild(0), reports);
@@ -175,17 +183,17 @@ public class VariablesVisitor extends PreorderJmmVisitor<List<Report>, String> {
            visit(node.getChildren().get(1).getJmmChild(0), reports);
            return "";
        }
-        visit(node.getChildren().get(1).getJmmChild(0), reports);
+
         return "Method";
     }
 
     private String visitCallMethod(JmmNode node, List<Report> reports){
-
+        /*
         if (node.getAncestor("AccessExpression").get().getChildren().get(0).getKind().equals("ID")){
             if(!node.getAncestor("AccessExpression").get().getChildren().get(0).get("value").equals("this")){
                 return "false";
             }
-        }
+        }*/
 
        /*for(JmmNode children: node.getChildren()){
             if(children.getKind().equals("ID")){
