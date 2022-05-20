@@ -24,9 +24,6 @@ public class JmmAnalyser implements JmmAnalysis {
         var tableBuilder = new JmmSymbolTableBuilder();
         tableBuilder.visit(parserResult.getRootNode(), symbolTable);
 
-        //SemanticVisitor semanticVisitor = new SemanticVisitor(symbolTable);
-        //semanticVisitor.visit(node, reports);
-
         VariablesVisitor variablesVisitor = new VariablesVisitor(symbolTable);
         variablesVisitor.visit(node, reports);
 

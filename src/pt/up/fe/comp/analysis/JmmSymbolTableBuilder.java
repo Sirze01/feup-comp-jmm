@@ -1,6 +1,5 @@
 package pt.up.fe.comp.analysis;
 
-import org.eclipse.jgit.util.SystemReader;
 import pt.up.fe.comp.ast.AstUtils;
 import pt.up.fe.comp.jmm.analysis.table.Symbol;
 import pt.up.fe.comp.jmm.analysis.table.Type;
@@ -79,14 +78,6 @@ public class JmmSymbolTableBuilder extends PreorderJmmVisitor<JmmSymbolTable, Bo
         String className = classNode.getJmmChild(0).get("name");
         symbolTable.setClassName(className);
 
-        System.out.println(" CLASS:\n" +  classNode);
-
-        for (JmmNode node : classNode.getChildren()) {
-
-            System.out.println(" Node:\n  " + node);
-            System.out.println("---------");
-            System.out.println("  Tree:\n   " + node.toTree());
-        }
         return true;
     }
 

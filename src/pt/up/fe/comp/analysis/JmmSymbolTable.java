@@ -1,6 +1,5 @@
 package pt.up.fe.comp.analysis;
 
-import org.eclipse.jgit.util.SystemReader;
 import pt.up.fe.comp.jmm.analysis.table.Symbol;
 import pt.up.fe.comp.jmm.analysis.table.SymbolTable;
 import pt.up.fe.comp.jmm.analysis.table.Type;
