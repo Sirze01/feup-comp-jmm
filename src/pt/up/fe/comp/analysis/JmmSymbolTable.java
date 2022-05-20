@@ -126,6 +126,7 @@ public class JmmSymbolTable implements SymbolTable {
 
     @Override
     public List<Symbol> getLocalVariables(String methodSignature) {
+        if(methods.get(methodSignature) == null) return null;
         return methods.get(methodSignature).getVars();
     }
 
@@ -159,7 +160,6 @@ public class JmmSymbolTable implements SymbolTable {
                 }
 
                 return getMethodByName(retExpression.get().getJmmParent().getJmmChild(0).getJmmChild(1).get("name"));
-
             }
             else return null;
     }

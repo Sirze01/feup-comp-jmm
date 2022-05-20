@@ -79,6 +79,8 @@ public class JmmSymbolTableBuilder extends PreorderJmmVisitor<JmmSymbolTable, Bo
         String className = classNode.getJmmChild(0).get("name");
         symbolTable.setClassName(className);
 
+        System.out.println(" CLASS:\n" +  classNode);
+
         for (JmmNode node : classNode.getChildren()) {
 
             System.out.println(" Node:\n  " + node);
