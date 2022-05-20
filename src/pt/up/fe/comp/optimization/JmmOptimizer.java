@@ -11,7 +11,6 @@ public class JmmOptimizer implements JmmOptimization {
 
         OllirGenerator generator = new OllirGenerator(semanticsResult.getSymbolTable());
         generator.visit(semanticsResult.getRootNode(), null);
-        //System.out.println(generator.getCode());
 
         return new OllirResult(semanticsResult, generator.getCode(), generator.getReports());
     }

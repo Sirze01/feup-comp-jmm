@@ -166,7 +166,6 @@ public class OllirExpressionGenerator extends AJmmVisitor<Boolean, String> {
     private String arrayAssignmentVisit(JmmNode assignmentNode, Boolean dummy) {
         StringBuilder before = new StringBuilder();
         StringBuilder assignmentStmt = new StringBuilder();
-        // ToDo: nulll s -> needs to search it elsewhere, should be the general search, all but imports DONE
 
         Symbol s = findSymbol(assignmentNode.getJmmChild(0));
 
@@ -582,7 +581,6 @@ public class OllirExpressionGenerator extends AJmmVisitor<Boolean, String> {
                 if (fields.isEmpty()) {
                     List<String[]> importsA = symbolTable.getImports().stream().map(importStmt -> importStmt.split("\\.")).collect(Collectors.toList());
                     List<String> importsB = importsA.stream().map(imports -> imports.length > 1 ? imports[imports.length - 1] : imports[0]).collect(Collectors.toList());
-                    // ToDo: Add ID visit for imported classes DONE
                     if (importsB.contains(idNode.get("name"))) {
                         return idNode.get("name");
                     }
