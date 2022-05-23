@@ -112,15 +112,12 @@ public class Cp2Test {
     public void test_1_01_VarNotDeclared() {
         var result = TestUtils.analyse(SpecsIo.getResource("fixtures/public/cp2/VarNotDeclared.jmm"));
         TestUtils.mustFail(result);
-        System.out.println("REPORTS: " + result);
     }
 
     @Test
     public void test_1_02_ClassNotImported() {
         var result = TestUtils.analyse(SpecsIo.getResource("fixtures/public/cp2/ClassNotImported.jmm"));
         TestUtils.mustFail(result);
-        System.out.println("REPORTS: " + result);
-
     }
 
     @Test
@@ -133,88 +130,66 @@ public class Cp2Test {
     public void test_1_04_BoolTimesInt() {
         var result = TestUtils.analyse(SpecsIo.getResource("fixtures/public/cp2/BoolTimesInt.jmm"));
         TestUtils.mustFail(result);
-        System.out.println("REPORTS: " + result);
-
     }
 
     @Test
     public void test_1_05_ArrayPlusInt() {
         var result = TestUtils.analyse(SpecsIo.getResource("fixtures/public/cp2/ArrayPlusInt.jmm"));
         TestUtils.mustFail(result);
-        System.out.println("REPORTS: " + result);
-
     }
 
     @Test
     public void test_1_06_ArrayAccessOnInt() {
         var result = TestUtils.analyse(SpecsIo.getResource("fixtures/public/cp2/ArrayAccessOnInt.jmm"));
         TestUtils.mustFail(result);
-        System.out.println("REPORTS: " + result);
-
     }
 
     @Test
     public void test_1_07_ArrayIndexNotInt() {
         var result = TestUtils.analyse(SpecsIo.getResource("fixtures/public/cp2/ArrayIndexNotInt.jmm"));
         TestUtils.mustFail(result);
-        System.out.println("REPORTS: " + result);
-
     }
 
     @Test
     public void test_1_08_AssignIntToBool() {
         var result = TestUtils.analyse(SpecsIo.getResource("fixtures/public/cp2/AssignIntToBool.jmm"));
         TestUtils.mustFail(result);
-        System.out.println("REPORTS: " + result);
-
     }
 
     @Test
     public void test_1_09_ObjectAssignmentFail() {
         var result = TestUtils.analyse(SpecsIo.getResource("fixtures/public/cp2/ObjectAssignmentFail.jmm"));
         TestUtils.mustFail(result);
-        System.out.println("REPORTS: " + result);
-
     }
 
     @Test
     public void test_1_10_ObjectAssignmentPassExtends() {
         var result = TestUtils.analyse(SpecsIo.getResource("fixtures/public/cp2/ObjectAssignmentPassExtends.jmm"));
         TestUtils.noErrors(result);
-        System.out.println("REPORTS: " + result);
-
     }
 
     @Test
     public void test_1_11_ObjectAssignmentPassImports() {
         var result = TestUtils.analyse(SpecsIo.getResource("fixtures/public/cp2/ObjectAssignmentPassImports.jmm"));
         TestUtils.noErrors(result);
-        System.out.println("REPORTS: " + result);
-
     }
 
     @Test
     public void test_1_12_IntInIfCondition() {
         var result = TestUtils.analyse(SpecsIo.getResource("fixtures/public/cp2/IntInIfCondition.jmm"));
         TestUtils.mustFail(result);
-        System.out.println("REPORTS: " + result);
-
     }
 
     @Test
     public void test_1_13_ArrayInWhileCondition() {
         var result = TestUtils.analyse(SpecsIo.getResource("fixtures/public/cp2/ArrayInWhileCondition.jmm"));
         TestUtils.mustFail(result);
-        System.out.println("REPORTS: " + result);
-
     }
 
     @Test
     public void test_1_14_CallToUndeclaredMethod() {
         var result = TestUtils.analyse(SpecsIo.getResource("fixtures/public/cp2/CallToUndeclaredMethod.jmm"));
         TestUtils.mustFail(result);
-        System.out.println("REPORTS: " + result);
-
     }
 
     @Test
@@ -222,8 +197,6 @@ public class Cp2Test {
         var result = TestUtils
                 .analyse(SpecsIo.getResource("fixtures/public/cp2/CallToMethodAssumedInExtends.jmm"));
         TestUtils.noErrors(result);
-        System.out.println("REPORTS: " + result);
-
     }
 
     @Test
@@ -231,8 +204,6 @@ public class Cp2Test {
         var result = TestUtils
                 .analyse(SpecsIo.getResource("fixtures/public/cp2/CallToMethodAssumedInImport.jmm"));
         TestUtils.noErrors(result);
-        System.out.println("REPORTS: " + result);
-
     }
 
     @Test
@@ -240,8 +211,6 @@ public class Cp2Test {
         var result = TestUtils
                 .analyse(SpecsIo.getResource("fixtures/public/cp2/IncompatibleArguments.jmm"));
         TestUtils.mustFail(result);
-        System.out.println("REPORTS: " + result);
-
     }
 
     @Test
@@ -256,8 +225,6 @@ public class Cp2Test {
         var result = TestUtils
                 .analyse(SpecsIo.getResource("fixtures/public/cp2/AssumeArguments.jmm"));
         TestUtils.noErrors(result);
-        System.out.println("REPORTS: " + result);
-
     }
 
     @Test
@@ -353,8 +320,11 @@ public class Cp2Test {
         assertNotNull("Could not find method " + methodName, methodFoo);
 
         var binOpInst = methodFoo.getInstructions().stream()
-                .filter(inst -> inst instanceof BinaryOpInstruction)
+                .filter(inst -> inst instanceof AssignInstruction)
+                .map(instr -> (AssignInstruction)instr)
+                .filter(assign -> assign.getRhs() instanceof BinaryOpInstruction)
                 .findFirst();
+
         assertTrue("Could not find a binary op instruction in method " + methodName, binOpInst.isPresent());
 
         var retInst = methodFoo.getInstructions().stream()
