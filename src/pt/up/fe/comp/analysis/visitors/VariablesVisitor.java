@@ -25,6 +25,7 @@ public class VariablesVisitor extends AJmmVisitor<List<Report>, String> {
         addVisit("ArrayExpression", this::visitArrayExp);
         addVisit("_New", this::visitNew);
         addVisit("AccessExpression", this::visitAccessExpression);
+        addVisit("CallExpression", this::visitCallExpression);
         addVisit("MemberArgs", this::visitMemberArgs);
         addVisit("IDAssignment", this::visitIDAssignment);
         addVisit("MethodBody", this::visitMethodBody);
@@ -39,6 +40,8 @@ public class VariablesVisitor extends AJmmVisitor<List<Report>, String> {
         addVisit("WhileCondition", this::visitCondition);
         setDefaultVisit(this::defaultVisit);
     }
+
+
 
     private String defaultVisit(JmmNode jmmNode, List<Report> reports){
         for (JmmNode child : jmmNode.getChildren())
@@ -179,15 +182,31 @@ public class VariablesVisitor extends AJmmVisitor<List<Report>, String> {
         String ret0 = visit(id0, reports);
         String ret1 = visit(id1, reports);
 
-        if (!(ret0.equals("IntArray") && ret1.equals("Int")) && !ret0.equals(ret1) && checkExtendsImport(ret1) == null) {
+        if (!(ret0.equals("IntArray") && ret1.equals("Int")) && !ret0.equals(ret1)){
 
-            reports.add(new Report(
-                    ReportType.ERROR,
-                    Stage.SEMANTIC,
-                    Integer.parseInt(id1.get("line")),
-                    Integer.parseInt(id1.get("column")),
-                    "Type mismatch in operation. '" + ret0 + "' to '" + ret1 + "'"
-            ));
+            if (checkExtendsImport(ret1) == null) {
+
+                reports.add(new Report(
+                        ReportType.ERROR,
+                        Stage.SEMANTIC,
+                        Integer.parseInt(id1.get("line")),
+                        Integer.parseInt(id1.get("column")),
+                        "Type mismatch in operation. '" + ret0 + "' to '" + ret1 + "'"
+                ));
+                return "<Invalid>";
+            } else if (checkExtendsImport(ret1).equals("extends")) {
+
+            } else if (checkExtendsImport(ret0) == null){
+                 if (checkExtendsImport(ret1).equals("import")) {
+                    reports.add(new Report(
+                            ReportType.ERROR,
+                            Stage.SEMANTIC,
+                            Integer.parseInt(id1.get("line")),
+                            Integer.parseInt(id1.get("column")),
+                            "Type mismatch in operation. '" + ret0 + "' to '" + ret1 + "'"
+                    ));
+                }
+            }
         } else {
             if (id0.getKind().equals("ID"))
                 variables.add(id0.get("name"));
@@ -204,7 +223,7 @@ public class VariablesVisitor extends AJmmVisitor<List<Report>, String> {
 
         Optional<JmmNode> ancestor = jmmNode.getAncestor("MainMethod").isPresent() ? jmmNode.getAncestor("MainMethod") : jmmNode.getAncestor("MethodBody");
 
-        Boolean isArg = false;
+        boolean isArg = false;
         Optional<JmmNode> argAncestor = jmmNode.getAncestor("MainMethod").isPresent() ? jmmNode.getAncestor("MainMethodArguments") : jmmNode.getAncestor("InstanceMethodArguments");
 
         if(jmmNode.getJmmParent().getKind().equals("ReturnExpression")){
@@ -313,6 +332,7 @@ public class VariablesVisitor extends AJmmVisitor<List<Report>, String> {
             JmmMethod ancestor = symbolTable.getParentMethodName(node);
             String symbolName = node.getJmmChild(0).get("name");
             Symbol symbol = ancestor.getName().equals("main")? symbolTable.getFieldByName(symbolName) : symbolTable.getLocalVar(ancestor.toString(), symbolName);
+            /*
             if(symbol != null && checkExtendsImport(symbolName) == null){
                 if(checkExtendsImport(childType) == null){
                     reports.add(new Report(
@@ -323,14 +343,37 @@ public class VariablesVisitor extends AJmmVisitor<List<Report>, String> {
                             "Method " + node.getJmmChild(1).getJmmChild(0).get("name") + "() isn't declared"));
                 }
                 return "";
+            }*/
+            if (symbol != null) {
+                return "";
             }
+            if (checkExtendsImport(childType) == null) {
+                reports.add(new Report(
+                        ReportType.ERROR,
+                        Stage.SEMANTIC,
+                        node.getJmmChild(1).getJmmChild(0).get("line") != null ? Integer.parseInt(node.getJmmChild(1).getJmmChild(0).get("line")) : 0,
+                        Integer.parseInt(node.getJmmChild(1).getJmmChild(0).get("column")),
+                        "Method " + node.getJmmChild(1).getJmmChild(0).get("name") + "() isn't declared"));
+            }
+
        }
 
-       for(JmmNode children: node.getChildren())
-           visit(children, reports);
-
+       for(JmmNode child: node.getChildren()) {
+           if (node.get("type").equals("Call") && checkImports(node.getJmmChild(0).get("name")) && child.getKind().equals("CallExpression"))
+               visitCallExpression(child, reports);
+           visit(child, reports);
+       }
        return "Method";
     }
+
+    private String visitCallExpression(JmmNode jmmNode, List<Report> reports) {
+        return visit(jmmNode.getJmmChild(1), reports);
+    }
+
+
+
+
+
 
     private String visitMemberArgs(JmmNode node, List<Report> reports){
         JmmMethod ancestor = symbolTable.getParentMethodName(node);
@@ -368,6 +411,8 @@ public class VariablesVisitor extends AJmmVisitor<List<Report>, String> {
 
         return "";
     }
+
+
 
     private String visitBinOp(JmmNode node, List<Report> reports){
 

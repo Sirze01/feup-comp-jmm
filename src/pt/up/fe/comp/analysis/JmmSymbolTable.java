@@ -146,14 +146,14 @@ public class JmmSymbolTable implements SymbolTable {
             Optional<JmmNode> methodBody = jmmNode.getAncestor("MethodBody");
             Optional<JmmNode> retExpression = jmmNode.getAncestor("ReturnExpression");
 
-            if (!methodBody.isEmpty()) {
+            if (methodBody.isPresent()) {
                 if (methodBody.get().getJmmParent().getKind().equals("MainMethod")) {
                     return getMethodByName("main");
                 }
 
                 return getMethodByName(methodBody.get().getJmmParent().getJmmChild(0).getJmmChild(1).get("name"));
             }
-            else if(!retExpression.isEmpty()){
+            else if(retExpression.isPresent()){
                 if (retExpression.get().getJmmParent().getKind().equals("MainMethod")) {
                     return getMethodByName("main");
                 }

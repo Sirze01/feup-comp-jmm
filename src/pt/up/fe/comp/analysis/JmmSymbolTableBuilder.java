@@ -75,6 +75,7 @@ public class JmmSymbolTableBuilder extends PreorderJmmVisitor<JmmSymbolTable, Bo
     }
 
     private Boolean classDeclarationVisit(JmmNode classNode, JmmSymbolTable symbolTable) {
+        System.out.println("Node: " + classNode.toTree());
         String className = classNode.getJmmChild(0).get("name");
         symbolTable.setClassName(className);
 
