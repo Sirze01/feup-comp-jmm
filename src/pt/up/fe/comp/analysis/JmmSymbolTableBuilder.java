@@ -65,6 +65,7 @@ public class JmmSymbolTableBuilder extends PreorderJmmVisitor<JmmSymbolTable, Bo
 
             }
             else {
+
                 Type type = AstUtils.getNodeType(node.getJmmChild(0));
 
                 Symbol symbol = new Symbol(type, varName);
@@ -114,6 +115,7 @@ public class JmmSymbolTableBuilder extends PreorderJmmVisitor<JmmSymbolTable, Bo
         }
     }
 
+
     private void addAssignments(JmmNode methodBody, JmmSymbolTable symbolTable, JmmMethod method) {
         /*for (JmmNode child : methodBody.getChildren()) {
             if (child.getKind().equals("Statement")) {
@@ -151,7 +153,6 @@ public class JmmSymbolTableBuilder extends PreorderJmmVisitor<JmmSymbolTable, Bo
         }*/
     }
 
-
     private Boolean mainMethodVisit(JmmNode methodNode, JmmSymbolTable symbolTable) {
         String parameterName = methodNode.getJmmChild(1).get("name");
 
@@ -188,7 +189,6 @@ public class JmmSymbolTableBuilder extends PreorderJmmVisitor<JmmSymbolTable, Bo
 
         JmmNode methodBody = methodNode.getJmmChild(2);
         addLocalVars(methodBody, method);
-        addAssignments(methodBody, symbolTable, method);
 
         return true;
     }
