@@ -3,6 +3,7 @@ package pt.up.fe.comp.backend;
 import org.specs.comp.ollir.*;
 import pt.up.fe.specs.util.exceptions.NotImplementedException;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -157,7 +158,16 @@ public class Jasmin {
         // Limit Declarations
         if(!method.isConstructMethod()) {
             this.jasminCodeBuilder.append("\t.limit stack 99\n");
-            this.jasminCodeBuilder.append("\t.limit locals 99\n\n");
+
+            ArrayList<Integer> locals = new ArrayList<>();
+            for (Descriptor d : variableTable.values())
+                if (!locals.contains(d.getVirtualReg())) locals.add(d.getVirtualReg());
+
+            if(!locals.contains(0)) locals.add(0);
+
+            this.jasminCodeBuilder.append("\t.limit locals ")
+                    .append(locals.size())
+                    .append("\n\n");
         }
 
         HashMap<String, Instruction> labels = method.getLabels();
