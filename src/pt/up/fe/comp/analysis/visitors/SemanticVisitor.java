@@ -1,22 +1,15 @@
 package pt.up.fe.comp.analysis.visitors;
 
-import jas.Var;
-import org.eclipse.jgit.util.SystemReader;
 import pt.up.fe.comp.analysis.JmmSymbolTable;
 import pt.up.fe.comp.jmm.analysis.table.Symbol;
-import pt.up.fe.comp.jmm.analysis.table.SymbolTable;
 import pt.up.fe.comp.jmm.ast.AJmmVisitor;
 import pt.up.fe.comp.jmm.ast.JmmNode;
 import pt.up.fe.comp.analysis.JmmMethod;
 
-import pt.up.fe.comp.jmm.ast.JmmVisitor;
-import pt.up.fe.comp.jmm.ast.PreorderJmmVisitor;
 import pt.up.fe.comp.jmm.report.Report;
 import pt.up.fe.comp.jmm.report.ReportType;
 import pt.up.fe.comp.jmm.report.Stage;
-import pt.up.fe.specs.util.treenode.transform.ANodeTransform;
 
-import javax.swing.*;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -47,6 +40,8 @@ public class SemanticVisitor extends AJmmVisitor<List<Report>, String> {
         addVisit("WhileCondition", this::visitCondition);
         setDefaultVisit(this::defaultVisit);
     }
+
+
 
     private String defaultVisit(JmmNode jmmNode, List<Report> reports){
         for (JmmNode child : jmmNode.getChildren())
@@ -172,9 +167,7 @@ public class SemanticVisitor extends AJmmVisitor<List<Report>, String> {
 
     private String visitIDAssignment(JmmNode jmmNode, List<Report> reports){
         JmmNode id0 = jmmNode.getJmmChild(0);
-        //System.out.println("id0: " + id0);
         JmmNode id1 = jmmNode.getJmmChild(1);
-        //System.out.println("id1: " + id1);
 
         if (!id0.getKind().equals("ID")) {
             reports.add(new Report(
@@ -187,22 +180,33 @@ public class SemanticVisitor extends AJmmVisitor<List<Report>, String> {
         }
 
         String ret0 = visit(id0, reports);
-        //System.out.println("first var:" + ret0);
         String ret1 = visit(id1, reports);
-        System.out.println("second var:" + ret1);
 
-        //  String methodSignature = symbolTable.getParentMethodName(id1).toString();
-        //Symbol s =  symbolTable.getLocalVar(methodSignature, id1.get("name"));
+        if (!(ret0.equals("IntArray") && ret1.equals("Int")) && !ret0.equals(ret1)){
 
-        if (!(ret0.equals("IntArray") && ret1.equals("Int")) && !ret0.equals(ret1) && checkExtendsImport(ret1) == null) {
+            if (checkExtendsImport(ret1) == null) {
 
-            reports.add(new Report(
-                    ReportType.ERROR,
-                    Stage.SEMANTIC,
-                    Integer.parseInt(id1.get("line")),
-                    Integer.parseInt(id1.get("column")),
-                    "Type mismatch in operation. '" + ret0 + "' to '" + ret1 + "'"
-            ));
+                reports.add(new Report(
+                        ReportType.ERROR,
+                        Stage.SEMANTIC,
+                        Integer.parseInt(id1.get("line")),
+                        Integer.parseInt(id1.get("column")),
+                        "Type mismatch in operation. '" + ret0 + "' to '" + ret1 + "'"
+                ));
+                return "<Invalid>";
+            } else if (checkExtendsImport(ret1).equals("extends")) {
+
+            } else if (checkExtendsImport(ret0) == null){
+                 if (checkExtendsImport(ret1).equals("import")) {
+                    reports.add(new Report(
+                            ReportType.ERROR,
+                            Stage.SEMANTIC,
+                            Integer.parseInt(id1.get("line")),
+                            Integer.parseInt(id1.get("column")),
+                            "Type mismatch in operation. '" + ret0 + "' to '" + ret1 + "'"
+                    ));
+                }
+            }
         } else {
             if (id0.getKind().equals("ID"))
                 variables.add(id0.get("name"));
@@ -219,7 +223,7 @@ public class SemanticVisitor extends AJmmVisitor<List<Report>, String> {
 
         Optional<JmmNode> ancestor = jmmNode.getAncestor("MainMethod").isPresent() ? jmmNode.getAncestor("MainMethod") : jmmNode.getAncestor("MethodBody");
 
-        Boolean isArg = false;
+        boolean isArg = false;
         Optional<JmmNode> argAncestor = jmmNode.getAncestor("MainMethod").isPresent() ? jmmNode.getAncestor("MainMethodArguments") : jmmNode.getAncestor("InstanceMethodArguments");
 
         if(jmmNode.getJmmParent().getKind().equals("ReturnExpression")){
@@ -232,7 +236,7 @@ public class SemanticVisitor extends AJmmVisitor<List<Report>, String> {
             }
         }
 
-        if(!argAncestor.isEmpty())
+        if(argAncestor.isPresent())
             for(JmmNode arg: argAncestor.get().getChildren()){
                 if(arg.getKind().equals("ID")){
                     if(arg.get("name").equals(jmmNode.get("name"))){
@@ -245,7 +249,6 @@ public class SemanticVisitor extends AJmmVisitor<List<Report>, String> {
         if (method != null) {
             if(jmmNode.getAttributes().contains("name")){
                 if (symbolTable.getLocalVar(method.toString(), jmmNode.get("name")) == null && !checkImports(jmmNode.get("name")) && !isArg) {
-                    //if(jmmNode.getJmmParent().getKind().equals("CallExpression") && checkExtendsImport(jmmNode.getJmmParent().getJmmChild(0).get("name")) != null)
                         reports.add(new Report(
                                 ReportType.ERROR, Stage.SEMANTIC,
                                 Integer.parseInt(jmmNode.get("line")),
@@ -293,12 +296,10 @@ public class SemanticVisitor extends AJmmVisitor<List<Report>, String> {
     }
 
     private String checkExtendsImport(String nodeType){
-        System.out.println(nodeType + " MANO TAQ UI");
         if(symbolTable.getImports().contains(nodeType)){
             return "import";
         }
         if(symbolTable.getSuper() != null && nodeType.equals(symbolTable.getClassName())){
-            System.out.println("AAII");
             return "extends";
         }
         if(nodeType.equals(symbolTable.getSuper())){
@@ -362,19 +363,19 @@ public class SemanticVisitor extends AJmmVisitor<List<Report>, String> {
                         Integer.parseInt(node.getJmmChild(1).getJmmChild(0).get("column")),
                         "Method " + node.getJmmChild(1).getJmmChild(0).get("name") + "() isn't declared"));
             }
+
        }
 
 
        for(JmmNode child: node.getChildren()) {
-           if (node.get("type").equals("Call") && checkImports(node.getJmmChild(0).get("name")) && child.getKind().equals("CallExpression")) {
-               String result =  visitCallExpression(child, reports);
-               System.out.println(child);
-               System.out.println("result: " + result);
-           }
+           if (node.get("type").equals("Call") && checkImports(node.getJmmChild(0).get("name")) && child.getKind().equals("CallExpression"))
+               visitCallExpression(child, reports);
            visit(child, reports);
        }
        return "Method";
     }
+
+
 
     private String visitMemberArgs(JmmNode node, List<Report> reports){
         JmmMethod ancestor = symbolTable.getParentMethodName(node);
@@ -386,7 +387,7 @@ public class SemanticVisitor extends AJmmVisitor<List<Report>, String> {
 
             if(child.getKind().equals("ID")){
                 String symbolName = child.get("name");
-                Boolean isMain = ancestor.getName() == "main";
+                boolean isMain = ancestor.getName().equals("main");
 
                 Symbol symbol = isMain ? symbolTable.getFieldByName(symbolName) : symbolTable.getLocalVar(ancestor.toString(), symbolName) ;
                 if (symbolTable.getMethodByName(methodName) != null && symbol != null
@@ -465,7 +466,7 @@ public class SemanticVisitor extends AJmmVisitor<List<Report>, String> {
 
         return lhsType;
 
-    };
+    }
 
     private String visitUnaryOp(JmmNode node, List<Report> reports){
         String expressionType = visit(node.getChildren().get(0), reports);

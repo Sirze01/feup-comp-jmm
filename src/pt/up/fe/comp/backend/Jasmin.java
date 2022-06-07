@@ -216,12 +216,12 @@ public class Jasmin {
         Element rightOperand = instruction.getRightOperand();
 
         switch(instruction.getOperation().getOpType()){
-            case ANDB: case ANDI32:
+            case ANDB:
                 binaryOpInstruction.append(pushElement(leftOperand))
                                    .append(pushElement(rightOperand))
                                    .append("\n\tiand\n");
                 break;
-            case ORB: case ORI32:
+            case ORB:
                 binaryOpInstruction.append(pushElement(leftOperand))
                                    .append(pushElement(rightOperand))
                                    .append("\n\tior\n");
@@ -238,7 +238,7 @@ public class Jasmin {
                                    .append("\ticonst_0\n")
                                    .append(labelContinue).append(":\n");
                 break;
-            case EQ: case EQI32:
+            case EQ:
                 labelTrue = "True_" + this.operatorLabel;
                 labelContinue = "Continue_" + this.operatorLabel++;
 
@@ -251,7 +251,7 @@ public class Jasmin {
                                    .append("\ticonst_1\n")
                                    .append(labelContinue).append(":\n");
                 break;
-            case LTH: case LTHI32:
+            case LTH:
                 labelTrue = "True_" + this.operatorLabel;
                 labelContinue = "Continue_" + this.operatorLabel++;
 
@@ -264,7 +264,7 @@ public class Jasmin {
                         .append("\ticonst_1\n")
                         .append(labelContinue).append(":\n");
                 break;
-            case GTE: case GTEI32:
+            case GTE:
                 labelTrue = "True_" + this.operatorLabel;
                 labelContinue = "Continue_" + this.operatorLabel++;
 
@@ -277,22 +277,22 @@ public class Jasmin {
                         .append("\ticonst_1\n")
                         .append(labelContinue).append(":\n");
                 break;
-            case ADD: case ADDI32:
+            case ADD:
                 binaryOpInstruction.append(pushElement(leftOperand))
                         .append(pushElement(rightOperand))
                         .append("\tiadd\n");
                 break;
-            case MUL: case MULI32:
+            case MUL:
                 binaryOpInstruction.append(pushElement(leftOperand))
                         .append(pushElement(rightOperand))
                         .append("\timul\n");
                 break;
-            case DIV: case DIVI32:
+            case DIV:
                 binaryOpInstruction.append(pushElement(leftOperand))
                         .append(pushElement(rightOperand))
                         .append("\tidiv\n");
                 break;
-            case SUB: case SUBI32:
+            case SUB:
                 binaryOpInstruction.append(pushElement(leftOperand))
                         .append(pushElement(rightOperand))
                         .append("\tisub\n");
@@ -397,16 +397,16 @@ public class Jasmin {
                 .append("\t");
 
         switch (condition.getOperation().getOpType()){
-            case GTE: case GTEI32:
+            case GTE:
                 condBranchInstruction.append("if_icmpge ");
                 break;
-            case LTH: case LTHI32:
+            case LTH:
                 condBranchInstruction.append("if_icmplt ");
                 break;
-            case EQ: case EQI32:
+            case EQ:
                 condBranchInstruction.append("if_icmpeq ");
                 break;
-            case NOTB: case NEQ: case NEQI32:
+            case NOTB: case NEQ:
                 condBranchInstruction.append("if_icmpne ");
                 break;
             default:
