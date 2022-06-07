@@ -197,7 +197,7 @@ public class SemanticVisitor extends AJmmVisitor<List<Report>, String> {
             } else if (checkExtendsImport(ret1).equals("extends")) {
 
             } else if (checkExtendsImport(ret0) == null){
-                 if (checkExtendsImport(ret1).equals("import")) {
+                if (checkExtendsImport(ret1).equals("import")) {
                     reports.add(new Report(
                             ReportType.ERROR,
                             Stage.SEMANTIC,
@@ -249,12 +249,12 @@ public class SemanticVisitor extends AJmmVisitor<List<Report>, String> {
         if (method != null) {
             if(jmmNode.getAttributes().contains("name")){
                 if (symbolTable.getLocalVar(method.toString(), jmmNode.get("name")) == null && !checkImports(jmmNode.get("name")) && !isArg) {
-                        reports.add(new Report(
-                                ReportType.ERROR, Stage.SEMANTIC,
-                                Integer.parseInt(jmmNode.get("line")),
-                                Integer.parseInt(jmmNode.get("column")),
-                                "Variable \"" + jmmNode.get("name") + "\" is not declared."
-                        ));
+                    reports.add(new Report(
+                            ReportType.ERROR, Stage.SEMANTIC,
+                            Integer.parseInt(jmmNode.get("line")),
+                            Integer.parseInt(jmmNode.get("column")),
+                            "Variable \"" + jmmNode.get("name") + "\" is not declared."
+                    ));
                 }
             }
         }
@@ -312,23 +312,23 @@ public class SemanticVisitor extends AJmmVisitor<List<Report>, String> {
     private String visitAccessExpression(JmmNode node, List<Report> reports){
 
         if(node.getJmmChild(0).getKind().equals("Literal") && node.getJmmChild(0).get("value").equals("this") && symbolTable.getSuper() == null){
-           JmmNode expressionNode = node.getJmmChild(1);
-           if (symbolTable.getMethodByName(expressionNode.getJmmChild(0).get("name")) == null){
-               reports.add(new Report(ReportType.ERROR,
-                       Stage.SEMANTIC,
-                       node.getJmmChild(1).getJmmChild(0).get("line") != null ? Integer.parseInt(node.getJmmChild(1).getJmmChild(0).get("line")) : 0,
-                       Integer.parseInt(node.getJmmChild(1).getJmmChild(0).get("column")),
-                       "Method " + node.getJmmChild(1).getJmmChild(0).get("name") + "() isn't declared"));
-           }
-           else if (node.getJmmChild(1).getJmmChild(1).getChildren().size()
-               != symbolTable.getMethodByName(node.getJmmChild(1).getJmmChild(0).get("name")).getParameters().size()){
-                 reports.add(new Report(ReportType.ERROR,
-                         Stage.SEMANTIC,
-                         expressionNode.getJmmChild(0).get("line") != null ? Integer.parseInt(expressionNode.getJmmChild(0).get("line")) : 0,
-                         Integer.parseInt(expressionNode.getJmmChild(0).get("column")),
-                         "Method " + expressionNode.getJmmChild(0).get("name") + "() has the wrong number of arguments"));
-           }
-       } else if (node.getJmmChild(0).getKind().equals("ID")){
+            JmmNode expressionNode = node.getJmmChild(1);
+            if (symbolTable.getMethodByName(expressionNode.getJmmChild(0).get("name")) == null){
+                reports.add(new Report(ReportType.ERROR,
+                        Stage.SEMANTIC,
+                        node.getJmmChild(1).getJmmChild(0).get("line") != null ? Integer.parseInt(node.getJmmChild(1).getJmmChild(0).get("line")) : 0,
+                        Integer.parseInt(node.getJmmChild(1).getJmmChild(0).get("column")),
+                        "Method " + node.getJmmChild(1).getJmmChild(0).get("name") + "() isn't declared"));
+            }
+            else if (node.getJmmChild(1).getJmmChild(1).getChildren().size()
+                    != symbolTable.getMethodByName(node.getJmmChild(1).getJmmChild(0).get("name")).getParameters().size()){
+                reports.add(new Report(ReportType.ERROR,
+                        Stage.SEMANTIC,
+                        expressionNode.getJmmChild(0).get("line") != null ? Integer.parseInt(expressionNode.getJmmChild(0).get("line")) : 0,
+                        Integer.parseInt(expressionNode.getJmmChild(0).get("column")),
+                        "Method " + expressionNode.getJmmChild(0).get("name") + "() has the wrong number of arguments"));
+            }
+        } else if (node.getJmmChild(0).getKind().equals("ID")){
             String childType = visit(node.getJmmChild(0), reports);
             JmmMethod ancestor = symbolTable.getParentMethodName(node);
             String symbolName = node.getJmmChild(0).get("name");
@@ -364,15 +364,15 @@ public class SemanticVisitor extends AJmmVisitor<List<Report>, String> {
                         "Method " + node.getJmmChild(1).getJmmChild(0).get("name") + "() isn't declared"));
             }
 
-       }
+        }
 
 
-       for(JmmNode child: node.getChildren()) {
-           if (node.get("type").equals("Call") && checkImports(node.getJmmChild(0).get("name")) && child.getKind().equals("CallExpression"))
-               visitCallExpression(child, reports);
-           visit(child, reports);
-       }
-       return "Method";
+        for(JmmNode child: node.getChildren()) {
+            if (node.get("type").equals("Call") && checkImports(node.getJmmChild(0).get("name")) && child.getKind().equals("CallExpression"))
+                visitCallExpression(child, reports);
+            visit(child, reports);
+        }
+        return "Method";
     }
 
 
@@ -423,10 +423,43 @@ public class SemanticVisitor extends AJmmVisitor<List<Report>, String> {
         JmmNode lhs = node.getChildren().get(0);
         JmmNode rhs = node.getChildren().get(1);
 
-        String lhsType = visit(lhs, reports);
-        String rhsType = visit(rhs, reports);
+        String lhsType;
+        String rhsType;
 
-        if (!lhsType.equals(rhsType)) {
+        boolean lhsIsArray = false;
+        boolean rhsIsArray = false;
+
+
+        if (node.getJmmParent().getKind().equals("ReturnExpression")){
+            JmmMethod method = symbolTable.getParentMethodName(node);
+            Symbol lhsSymbol;
+            Symbol rhsSymbol;
+            if (node.getJmmChild(0).getAttributes().contains("name")) {
+                lhsSymbol = symbolTable.getLocalVar(method.toString(), node.getJmmChild(0).get("name"));
+                if (lhsSymbol == null)
+                    lhsType = visit(lhs, reports);
+                else {
+                    lhsType = lhsSymbol.getType().getName();
+                    lhsIsArray = lhsSymbol.getType().isArray();
+                }
+            } else lhsType = visit(lhs, reports);
+            if (node.getJmmChild(1).getAttributes().contains("name")){
+                rhsSymbol = symbolTable.getLocalVar(method.toString(), node.getJmmChild(1).get("name"));
+                if (rhsSymbol == null)
+                    rhsType = visit(rhs, reports);
+                else {
+                    rhsType = rhsSymbol.getType().getName();
+                    rhsIsArray = rhsSymbol.getType().isArray();
+                }
+            } else rhsType = visit(rhs, reports);
+        }
+        else {
+            lhsType = visit(lhs, reports);
+            rhsType = visit(rhs, reports);
+        }
+
+
+        if (!lhsType.equals(rhsType) || (rhsIsArray) || lhsIsArray) {
             reports.add(new Report(
                     ReportType.ERROR,
                     Stage.SEMANTIC,
@@ -536,5 +569,10 @@ public class SemanticVisitor extends AJmmVisitor<List<Report>, String> {
             if (imp.equals(variableName)) return true;
         }
         return false;
+    }
+
+
+    private void addSemanticErrorReport(){
+
     }
 }
