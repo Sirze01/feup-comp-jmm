@@ -225,32 +225,32 @@ public class OllirExpressionGenerator extends AJmmVisitor<Boolean, String> {
         switch (binOpNode.get("op")) {
             case "And":
                 binOpStmt.append(" &&.")
-                        .append(opType);
+                         .append(opType);
                 break;
 
             case "Less":
                 binOpStmt.append(" <.")
-                        .append(opType);
+                         .append(opType);
                 break;
 
             case "Add":
                 binOpStmt.append(" +.")
-                        .append(opType);
+                         .append(opType);
                 break;
 
             case "Sub":
                 binOpStmt.append(" -.")
-                        .append(opType);
+                         .append(opType);
                 break;
 
             case "Mult":
                 binOpStmt.append(" *.")
-                        .append(opType);
+                         .append(opType);
                 break;
 
             case "Div":
                 binOpStmt.append(" /.")
-                        .append(opType);
+                         .append(opType);
                 break;
 
             default:
@@ -306,7 +306,7 @@ public class OllirExpressionGenerator extends AJmmVisitor<Boolean, String> {
         switch (unaryNode.get("op")) {
             case "Not":
                 unaryOpStmt.append("!.")
-                        .append(opType);
+                           .append(opType);
                 break;
 
             default:
@@ -357,12 +357,15 @@ public class OllirExpressionGenerator extends AJmmVisitor<Boolean, String> {
     private String accessVisit(JmmNode accessNode, Boolean dummy) {
         StringBuilder accessStmt = new StringBuilder();
         String after = "";
+
         if(accessNode.getJmmParent().getKind().equals("Statement")){
             accessStmt.append(" ".repeat(getNumSpaces(indent)));
             after = ";\n";
         }
+
         String exp = null;
         String tmp = null;
+
         if (!(accessNode.getJmmChild(0).getKind().equals("AccessExpression") ||
                 accessNode.getJmmChild(0).getKind().equals("CallExpression"))) {
             exp = visit(accessNode.getJmmChild(0));
@@ -438,7 +441,6 @@ public class OllirExpressionGenerator extends AJmmVisitor<Boolean, String> {
 
             return accessStmt + after;
         }
-
 
         if (methods.size() == 1) {
             String type = OllirGeneratorUtils.toOllirType(methods.get(0).getReturnType());
@@ -581,14 +583,16 @@ public class OllirExpressionGenerator extends AJmmVisitor<Boolean, String> {
                 if (fields.isEmpty()) {
                     List<String[]> importsA = symbolTable.getImports().stream().map(importStmt -> importStmt.split("\\.")).collect(Collectors.toList());
                     List<String> importsB = importsA.stream().map(imports -> imports.length > 1 ? imports[imports.length - 1] : imports[0]).collect(Collectors.toList());
+
                     if (importsB.contains(idNode.get("name"))) {
                         return idNode.get("name");
                     }
 
-                    reports.add(new Report(ReportType.ERROR, Stage.OPTIMIZATION, Integer.parseInt(idNode.get("line")),
-                            Integer.parseInt(idNode.get("column")), "Variable " + idNode.get("name") + " not found"));
+                    reports.add(new Report(ReportType.ERROR, Stage.OPTIMIZATION,Integer.parseInt(idNode.get("column")), "Variable " + idNode.get("name") + " not found"));
+
                     return "";
                 }
+
                 s = fields.get(0);
                 String tmp = generateTmp(s.getType());
                 code.append(" ".repeat(getNumSpaces(indent)));
