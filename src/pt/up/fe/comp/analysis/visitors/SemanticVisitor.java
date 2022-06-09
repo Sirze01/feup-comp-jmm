@@ -48,6 +48,8 @@ public class SemanticVisitor extends AJmmVisitor<List<Report>, String> {
         setDefaultVisit(this::defaultVisit);
     }
 
+
+
     /**
      * Visitors
      */
@@ -132,29 +134,35 @@ public class SemanticVisitor extends AJmmVisitor<List<Report>, String> {
     }
 
     private String visitID(JmmNode node, List<Report> reports){
-
+        System.out.println(node);
+        System.out.println(symbolTable.getFields());
         JmmMethod method = symbolTable.getParentMethodName(node);
 
         Optional<JmmNode> ancestor = node.getAncestor("MainMethod").isPresent() ?
                 node.getAncestor("MainMethod") : node.getAncestor("MethodBody");
 
         boolean isArg = false;
+
+        if (node.getJmmParent().getKind().equals("ReturnExpression")) {
+            isArgument(node.getJmmParent().getJmmParent().getJmmChild(1), node, isArg);
+        }
+
         Optional<JmmNode> argAncestor = node.getAncestor("MainMethod").isPresent() ?
                 node.getAncestor("MainMethodArguments") : node.getAncestor("InstanceMethodArguments");
-
-        if (node.getJmmParent().getKind().equals("ReturnExpression"))
-            isArgument(node.getJmmParent().getJmmParent().getJmmChild(1), node, isArg);
-
         argAncestor.ifPresent(jmmNode -> isArgument(jmmNode, node, isArg));
 
-        if (method != null && node.getAttributes().contains("name"))
+        if (method != null && node.getAttributes().contains("name")) {
+
+            System.out.println(symbolTable.getFieldByName(node.get("name")));
             if (symbolTable.getLocalVar(method.toString(), node.get("name")) == null
                     && !checkImports(node.get("name"))
-                    && !isArg) {
+                    && !isArg
+                    && symbolTable.getFieldByName(node.get("name")) == null) {
                 addSemanticErrorReport(reports, node,
                         "Variable \"" + node.get("name") + "\" is not declared.");
                 return "<Invalid>";
             }
+        }
 
         if (ancestor.isEmpty()) return "";
 
@@ -169,6 +177,7 @@ public class SemanticVisitor extends AJmmVisitor<List<Report>, String> {
         if (name.isEmpty()) return node.get("type");
 
         Symbol s = symbolTable.getLocalVar(method.toString(), name.get());
+
         if (!isVariableInitialized(node, reports, method, s)) return "<Invalid>";
 
         if (s != null)
@@ -401,7 +410,6 @@ public class SemanticVisitor extends AJmmVisitor<List<Report>, String> {
         return visit(node.getJmmChild(1), reports);
     }
 
-
     /**
      * Condition Visitors
      */
@@ -437,11 +445,12 @@ public class SemanticVisitor extends AJmmVisitor<List<Report>, String> {
         return true;
     }
 
-    private void isArgument(JmmNode parent, JmmNode node, boolean isArg){
-        for(JmmNode arg: parent.getChildren())
-            if(arg.getKind().equals("ID"))
-                if (arg.get("name").equals(node.get("name")))
+    private void isArgument(JmmNode parent, JmmNode child, boolean isArg){
+        for(JmmNode arg: parent.getChildren()) {
+            if (arg.getKind().equals("ID"))
+                if (arg.get("name").equals(child.get("name")))
                     isArg = true;
+        }
     }
 
     private boolean checkMethodParameter(JmmNode node,  JmmMethod method){

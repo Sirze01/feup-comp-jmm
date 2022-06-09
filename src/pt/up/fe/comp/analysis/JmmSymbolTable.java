@@ -159,7 +159,6 @@ public class JmmSymbolTable implements SymbolTable {
             }
             return getMethodByName(retExpression.get().getJmmParent().getJmmChild(0).getJmmChild(1).get("name"));
         }
-        else return null;
-
+        return null;
     }
 }
