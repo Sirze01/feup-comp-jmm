@@ -416,7 +416,7 @@ public class SemanticVisitor extends AJmmVisitor<List<Report>, String> {
 
     private String visitCondition(JmmNode node, List<Report> reports) {
         for (JmmNode child : node.getChildren()) {
-            String type = visit(child);
+            String type = visit(child, reports);
             if (!type.equals("Boolean")) {
                 addSemanticErrorReport(reports, node, "Condition is not of type 'boolean'");
                 return "<Invalid>";
