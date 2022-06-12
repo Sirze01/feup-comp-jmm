@@ -63,7 +63,6 @@ public class JmmSymbolTableBuilder extends PreorderJmmVisitor<JmmSymbolTable, Bo
                         "Variable already defined in this scope. Last definition: " + symbolTable.getFieldsMap().get(varName)));
 
             } else {
-                System.out.println("field name: " + varName);
                 Type type = AstUtils.getNodeType(node.getJmmChild(0));
 
                 Symbol symbol = new Symbol(type, varName);

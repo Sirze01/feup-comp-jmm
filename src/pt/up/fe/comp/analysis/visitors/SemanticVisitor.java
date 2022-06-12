@@ -157,7 +157,8 @@ public class SemanticVisitor extends AJmmVisitor<List<Report>, String> {
             if (symbolTable.getLocalVar(method.toString(), node.get("name")) == null
                     && !checkImports(node.get("name"))
                     && !isArg
-                    && symbolTable.getFieldByName(node.get("name")) == null) {
+                    && symbolTable.getFieldByName(node.get("name")) == null
+                    && symbolTable.getParameter(method.toString(), node.get("name")) == null) {
                 addSemanticErrorReport(reports, node,
                         "Variable \"" + node.get("name") + "\" is not declared.");
                 return "<Invalid>";
