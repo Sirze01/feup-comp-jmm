@@ -18,11 +18,15 @@ public class Jasmin {
 
     int operatorLabel;
     int comparisonLabel;
+    int stackLimit;
+    int currentStackValue;
 
     public String build(ClassUnit ollirClass) throws OllirErrorException {
         this.ollirClass = ollirClass;
         this.operatorLabel = 0;
         this.comparisonLabel = 0;
+        this.stackLimit = 0;
+        this.currentStackValue = 0;
 
         this.ollirClass.checkMethodLabels();
         this.ollirClass.buildCFGs();
@@ -138,6 +142,9 @@ public class Jasmin {
     }
 
     private void buildClassMethod(Method method) {
+        this.stackLimit = 0;
+        this.currentStackValue = 0;
+
         this.variableTable = method.getVarTable();
         // Method Signature Definition
         this.jasminCodeBuilder.append(".method ")
@@ -155,9 +162,23 @@ public class Jasmin {
                 .append(buildTypes(method.getReturnType()))
                 .append("\n");
 
+
+        StringBuilder instructions = new StringBuilder();
+        HashMap<String, Instruction> labels = method.getLabels();
+        for(Instruction instruction : method.getInstructions()) {
+            for(String label : labels.keySet())
+                if(labels.get(label) == instruction) instructions.append(label).append(":\n");
+
+            instructions.append(buildMethodInstructions(instruction));
+
+            if(instruction.getInstType() == InstructionType.CALL)
+                if(((CallInstruction) instruction).getReturnType().getTypeOfElement() != ElementType.VOID)
+                    instructions.append("\tpop\n");
+        }
+
         // Limit Declarations
         if(!method.isConstructMethod()) {
-            this.jasminCodeBuilder.append("\t.limit stack 99\n");
+            this.jasminCodeBuilder.append("\t.limit stack ").append(this.stackLimit).append("\n");
 
             ArrayList<Integer> locals = new ArrayList<>();
             for (Descriptor d : variableTable.values())
@@ -170,17 +191,7 @@ public class Jasmin {
                     .append("\n\n");
         }
 
-        HashMap<String, Instruction> labels = method.getLabels();
-        for(Instruction instruction : method.getInstructions()) {
-            for(String label : labels.keySet())
-               if(labels.get(label) == instruction) this.jasminCodeBuilder.append(label).append(":\n");
-
-            this.jasminCodeBuilder.append(buildMethodInstructions(instruction));
-
-            if(instruction.getInstType() == InstructionType.CALL)
-                if(((CallInstruction) instruction).getReturnType().getTypeOfElement() != ElementType.VOID)
-                    this.jasminCodeBuilder.append("\tpop\n");
-        }
+        this.jasminCodeBuilder.append(instructions);
 
         if (method.isConstructMethod() || method.getReturnType().getTypeOfElement() == ElementType.VOID)
             this.jasminCodeBuilder.append("\treturn\n");
@@ -227,16 +238,25 @@ public class Jasmin {
 
         switch(instruction.getOperation().getOpType()){
             case ANDB:
+                updateStackLimit(1);
+                currentStackValue = 0;
+
                 binaryOpInstruction.append(pushElement(leftOperand))
                                    .append(pushElement(rightOperand))
                                    .append("\n\tiand\n");
                 break;
             case ORB:
+                updateStackLimit(1);
+                currentStackValue = 0;
+
                 binaryOpInstruction.append(pushElement(leftOperand))
                                    .append(pushElement(rightOperand))
                                    .append("\n\tior\n");
                 break;
             case NOT: case NOTB:
+                updateStackLimit(1);
+                currentStackValue = 0;
+
                 labelTrue = "True_" + this.operatorLabel;
                 labelContinue = "Continue_" + this.operatorLabel++;
 
@@ -260,6 +280,8 @@ public class Jasmin {
                                    .append(labelTrue).append(":\n")
                                    .append("\ticonst_1\n")
                                    .append(labelContinue).append(":\n");
+
+                currentStackValue = 1;
                 break;
             case LTH:
                 labelTrue = "True_" + this.operatorLabel;
@@ -273,6 +295,8 @@ public class Jasmin {
                         .append(labelTrue).append(":\n")
                         .append("\ticonst_1\n")
                         .append(labelContinue).append(":\n");
+
+                currentStackValue = 1;
                 break;
             case GTE:
                 labelTrue = "True_" + this.operatorLabel;
@@ -286,26 +310,40 @@ public class Jasmin {
                         .append(labelTrue).append(":\n")
                         .append("\ticonst_1\n")
                         .append(labelContinue).append(":\n");
+
+                currentStackValue = 1;
                 break;
             case ADD:
                 binaryOpInstruction.append(pushElement(leftOperand))
                         .append(pushElement(rightOperand))
                         .append("\tiadd\n");
+
+                updateStackLimit(currentStackValue);
+                currentStackValue -= 1;
                 break;
             case MUL:
                 binaryOpInstruction.append(pushElement(leftOperand))
                         .append(pushElement(rightOperand))
                         .append("\timul\n");
+
+                updateStackLimit(currentStackValue);
+                currentStackValue -= 1;
                 break;
             case DIV:
                 binaryOpInstruction.append(pushElement(leftOperand))
                         .append(pushElement(rightOperand))
                         .append("\tidiv\n");
+
+                updateStackLimit(currentStackValue);
+                currentStackValue -= 1;
                 break;
             case SUB:
                 binaryOpInstruction.append(pushElement(leftOperand))
                         .append(pushElement(rightOperand))
                         .append("\tisub\n");
+
+                updateStackLimit(currentStackValue);
+                currentStackValue -= 1;
                 break;
             default:
                 throw new NotImplementedException(instruction.getOperation().getOpType());
@@ -324,6 +362,9 @@ public class Jasmin {
                 || operand.getType().getTypeOfElement() == ElementType.BOOLEAN) ? "i" : "a";
 
         returnInstruction.append(pushElement(operand)).append("\t").append(returnType).append("return\n");
+
+        updateStackLimit(currentStackValue);
+        currentStackValue = 0;
 
         return returnInstruction.toString();
 
@@ -345,6 +386,9 @@ public class Jasmin {
                            .append(field.getName()).append(" ")
                            .append(buildTypes(field.getType())).append("\n");
 
+        updateStackLimit(currentStackValue);
+        currentStackValue = 0;
+
         return putFieldInstruction.toString();
     }
 
@@ -364,6 +408,9 @@ public class Jasmin {
                 .append(field.getName()).append(" ")
                 .append(buildTypes(field.getType())).append("\n");
 
+        updateStackLimit(currentStackValue);
+        currentStackValue = 0;
+
         return getFieldInstruction.toString();
     }
 
@@ -377,6 +424,9 @@ public class Jasmin {
         Element rightOperand = condition.getRightOperand();
 
         if(condition.getOperation().getOpType() == OperationType.ANDB){
+            updateStackLimit(1);
+            currentStackValue = 0;
+
             String labelComparison = "Condition_" + this.comparisonLabel++;
 
             condBranchInstruction.append(pushElement(leftOperand))
@@ -390,6 +440,9 @@ public class Jasmin {
         }
 
         if(condition.getOperation().getOpType() == OperationType.ORB){
+            updateStackLimit(1);
+            currentStackValue = 0;
+
             String labelComparison = "Condition_" + this.comparisonLabel++;
 
             condBranchInstruction.append(pushElement(leftOperand))
@@ -426,6 +479,9 @@ public class Jasmin {
 
         condBranchInstruction.append(instruction.getLabel())
                              .append("\n");
+
+        updateStackLimit(currentStackValue);
+        currentStackValue = 0;
 
         return condBranchInstruction.toString();
 
@@ -496,6 +552,8 @@ public class Jasmin {
             if(destType.getTypeOfElement() == ElementType.INT32 || destType.getTypeOfElement() == ElementType.BOOLEAN){
                 assignInstruction.append(buildMethodInstructions(instruction.getRhs()))
                         .append("\tiastore\n");
+                updateStackLimit(currentStackValue);
+                currentStackValue = 0;
                 return assignInstruction.toString();
             }
         }
@@ -509,6 +567,8 @@ public class Jasmin {
                 .append(storeType).append("store").append(hasSM).append(destVariable.getVirtualReg())
                 .append("\n");
 
+        updateStackLimit(currentStackValue);
+        currentStackValue = 0;
         return assignInstruction.toString();
     }
 
@@ -521,6 +581,9 @@ public class Jasmin {
 
                 for(Element operand: instruction.getListOfOperands())
                     callInstruction.append(pushElement(operand));
+
+                updateStackLimit(currentStackValue + 1);
+                currentStackValue =  (instruction.getReturnType().getTypeOfElement() == ElementType.VOID) ? 0 : 1;
 
                 callInstruction.append("\tinvokevirtual ");
 
@@ -543,6 +606,7 @@ public class Jasmin {
                 break;
             case invokespecial:
                 callInstruction.append(pushElement(instruction.getFirstArg()));
+                updateStackLimit(currentStackValue);
 
                 String initClassName = instruction.getFirstArg().getType().getTypeOfElement() == ElementType.THIS
                         ? this.superClassName : this.ollirClass.getClassName();
@@ -554,11 +618,14 @@ public class Jasmin {
                 callInstruction.append(")")
                         .append(buildTypes(instruction.getReturnType()))
                         .append("\n");
+
+                currentStackValue = 0;
                 break;
             case invokestatic:
                 for(Element operand: instruction.getListOfOperands())
                     callInstruction.append(pushElement(operand));
 
+                updateStackLimit(currentStackValue);
                 callInstruction.append("\tinvokestatic ");
 
                 String staticClass = ((Operand) instruction.getFirstArg()).getName();
@@ -576,6 +643,8 @@ public class Jasmin {
                 callInstruction.append(")")
                         .append(buildTypes(instruction.getReturnType()))
                         .append("\n");
+
+                currentStackValue =  (instruction.getReturnType().getTypeOfElement() == ElementType.VOID) ? 0 : 1;
                 break;
             case NEW:
                 if(instruction.getReturnType().getTypeOfElement() == ElementType.OBJECTREF){
@@ -602,6 +671,9 @@ public class Jasmin {
                     throw new NotImplementedException("New with type "
                             + instruction.getFirstArg().getType().getTypeOfElement());
                 // Other new types are not supported
+
+                updateStackLimit(currentStackValue);
+                currentStackValue = 1;
                 break;
             case arraylength:
                 callInstruction.append(pushElement(instruction.getFirstArg()))
@@ -640,6 +712,8 @@ public class Jasmin {
     }
 
     private String pushElementDescriptor(Descriptor descriptor) {
+        currentStackValue += 1;
+
         ElementType type = descriptor.getVarType().getTypeOfElement();
         if(type == ElementType.THIS)
             return "\taload_0\n";
@@ -651,6 +725,8 @@ public class Jasmin {
     }
 
     private String pushLiteral(LiteralElement element) {
+        currentStackValue += 1;
+
         StringBuilder literalElement = new StringBuilder("\t");
 
         switch (element.getType().getTypeOfElement()){
@@ -672,5 +748,10 @@ public class Jasmin {
                 literalElement.append("ldc ").append(element.getLiteral()).append("\n");
         }
         return literalElement.toString();
+    }
+
+    private void updateStackLimit(int stackValue){
+        if(stackValue > this.stackLimit)
+            this.stackLimit = stackValue;
     }
 }
