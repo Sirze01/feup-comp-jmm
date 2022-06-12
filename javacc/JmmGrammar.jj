@@ -128,8 +128,8 @@ ReturnExpression :
 ;
 
 Type :
-    <INT> ({jjtThis.put("type", "Int" );}) (<OPENARRAY> <CLOSEARRAY> ({jjtThis.put("type", "IntArray"); }))?
-    | <BOOLEAN> ({jjtThis.put("type", "Boolean"); })
+    <INT> ({jjtThis.put("type", "int" );}) (<OPENARRAY> <CLOSEARRAY> ({jjtThis.put("type", "intArray"); }))?
+    | <BOOLEAN> ({jjtThis.put("type", "boolean"); })
     | <STRING> ({jjtThis.put("type", "String"); })
     | <IDENTIFIER> ({jjtThis.put("type", lastConsumedToken.getImage()); })
 ;
@@ -216,9 +216,9 @@ CallExpression :
 ;
 
 FinalTerms #void:
-    <INTEGERLITERAL> ({jjtThis.put("value", lastConsumedToken.getImage()); }{jjtThis.put("type", "Int"); }) #Literal
-    | <TRUE> ({jjtThis.put("value", lastConsumedToken.getImage()); }{jjtThis.put("type", "Boolean"); }) #Literal
-    | <FALSE> ({jjtThis.put("value", lastConsumedToken.getImage()); }{jjtThis.put("type", "Boolean"); }) #Literal
+    <INTEGERLITERAL> ({jjtThis.put("value", lastConsumedToken.getImage()); }{jjtThis.put("type", "int"); }) #Literal
+    | <TRUE> ({jjtThis.put("value", lastConsumedToken.getImage()); }{jjtThis.put("type", "boolean"); }) #Literal
+    | <FALSE> ({jjtThis.put("value", lastConsumedToken.getImage()); }{jjtThis.put("type", "boolean"); }) #Literal
     | <IDENTIFIER> ({jjtThis.put("name", lastConsumedToken.getImage()); }) #ID
     | <THIS> ({jjtThis.put("value", "this"); }{jjtThis.put("type", "Object"); }) #Literal
     | NewExpression
@@ -227,7 +227,7 @@ FinalTerms #void:
 
 NewExpression #void:
     <NEW> (
-    (<INT> ArrayExpression {jjtThis.put("type", "IntArray");}) #_New
+    (<INT> ArrayExpression {jjtThis.put("type", "intArray");}) #_New
     | ( ( (<IDENTIFIER> ({jjtThis.put("type", lastConsumedToken.getImage()); }) #ID) <OPENPAREN> <CLOSEPAREN>)
             ({jjtThis.put("type", "Class");})) #_New
     )

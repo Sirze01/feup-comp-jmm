@@ -86,7 +86,7 @@ public class SemanticVisitor extends AJmmVisitor<List<Report>, String> {
     }
 
     private String visitVarDeclaration(JmmNode node, List<Report> reports){
-        List<String> types = new ArrayList<>(Arrays.asList("Int", "IntArray", "Boolean", symbolTable.getClassName()));
+        List<String> types = new ArrayList<>(Arrays.asList("int", "intArray", "boolean", symbolTable.getClassName()));
 
         for (String imp: symbolTable.getImports()) {
             String[] impList = imp.split("\\.");
@@ -118,7 +118,7 @@ public class SemanticVisitor extends AJmmVisitor<List<Report>, String> {
         String type1 = visit(id1, reports);
         String type1ExtendsImports = checkExtendsImport(type1);
 
-        if ((type0.equals("IntArray") && type1.equals("Int")) || type0.equals(type1)) {
+        if ((type0.equals("intArray") && type1.equals("int")) || type0.equals(type1)) {
             if (id0.getKind().equals("ID"))
                 variables.add(id0.get("name"));
             else
@@ -235,15 +235,15 @@ public class SemanticVisitor extends AJmmVisitor<List<Report>, String> {
         List<String> intOp = new ArrayList<>(Arrays.asList("Mult", "Div", "Sub", "Add", "Less"));
 
         if (intOp.contains(node.get("op"))){
-            if ((!lhsType.equals("Int") && !lhsType.equals("import") && !lhsType.equals("extends"))
-                    || (!rhsType.equals("Int") && !rhsType.equals("import") && !rhsType.equals("extends"))) {
+            if ((!lhsType.equals("int") && !lhsType.equals("import") && !lhsType.equals("extends"))
+                    || (!rhsType.equals("int") && !rhsType.equals("import") && !rhsType.equals("extends"))) {
                 addSemanticErrorReport(reports, rhs,
                         "BinOP: Operations must be boolean integers. Used <" + lhsType + "> and <" + rhsType + ">");
             }
         }
         else if (node.get("op").equals("And")){
-            if ((!lhsType.equals("Boolean") && !lhsType.equals("import") && !lhsType.equals("extends"))
-                    || (!rhsType.equals("Boolean") && !rhsType.equals("import") && !rhsType.equals("extends"))) {
+            if ((!lhsType.equals("boolean") && !lhsType.equals("import") && !lhsType.equals("extends"))
+                    || (!rhsType.equals("boolean") && !rhsType.equals("import") && !rhsType.equals("extends"))) {
                 addSemanticErrorReport(reports, rhs,
                         "BinOP: Operations must be boolean integers. Used <" + lhsType + "> and <" + rhsType + ">");
             }
@@ -256,11 +256,11 @@ public class SemanticVisitor extends AJmmVisitor<List<Report>, String> {
     private String visitUnaryOp(JmmNode node, List<Report> reports){
         String expressionType = visit(node.getChildren().get(0), reports);
 
-        if (!expressionType.equals("Boolean"))
+        if (!expressionType.equals("boolean"))
             addSemanticErrorReport(reports, node,
                     "Not operator can only be applied to boolean expressions.");
 
-        return "Boolean";
+        return "boolean";
     }
 
     /**
@@ -324,13 +324,13 @@ public class SemanticVisitor extends AJmmVisitor<List<Report>, String> {
         for (JmmNode child : node.getChildren()) {
             if (child.getKind().equals("Literal")) {
                 String idxType = visit(child, reports);
-                if (!idxType.equals("Int")) {
+                if (!idxType.equals("int")) {
                     addSemanticErrorReport(reports, node, "Array indexes must be of type int.");
                     return "<Invalid>";
                 }
             } else if (!child.equals(node.getJmmChild(0))) {
                 Symbol idx = symbolTable.getLocalVar(method.toString(), child.get("name"));
-                if (!idx.getType().getName().equals("Int")){
+                if (!idx.getType().getName().equals("int")){
                     addSemanticErrorReport(reports, node,
                             "Array indexes must be of type int.");
                     return "<Invalid>";
@@ -417,7 +417,7 @@ public class SemanticVisitor extends AJmmVisitor<List<Report>, String> {
     private String visitCondition(JmmNode node, List<Report> reports) {
         for (JmmNode child : node.getChildren()) {
             String type = visit(child);
-            if (!type.equals("Boolean")) {
+            if (!type.equals("boolean")) {
                 addSemanticErrorReport(reports, node, "Condition is not of type 'boolean'");
                 return "<Invalid>";
             }

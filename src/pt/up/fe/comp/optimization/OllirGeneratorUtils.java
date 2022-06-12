@@ -28,10 +28,10 @@ public abstract class OllirGeneratorUtils {
             case "void":
                 code.append("V");
                 break;
-            case "Int":
+            case "int":
                 code.append("i32");
                 break;
-            case "Boolean":
+            case "boolean":
                 code.append("bool");
                 break;
             default:
@@ -47,8 +47,8 @@ public abstract class OllirGeneratorUtils {
     }
 
     public static String toOllirType(String type){
-        if(type.equals("IntArray")){
-            return toOllirType("Int", true);
+        if(type.equals("intArray")){
+            return toOllirType("int", true);
         }
 
         return type.contains("[") ? toOllirType(type, true) : toOllirType(type, false) ;
