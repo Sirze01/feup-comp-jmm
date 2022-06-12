@@ -22,7 +22,7 @@ public class JmmBackend implements JasminBackend {
 
             Jasmin jasmin = new Jasmin();
             String jasminCode = jasmin.build(ollirClass);
-            System.out.println(jasminCode);
+            //System.out.println(jasminCode);
 
             // More reports from this stage
             List<Report> reports = new ArrayList<>();
