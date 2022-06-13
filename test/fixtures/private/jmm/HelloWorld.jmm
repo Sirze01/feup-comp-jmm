@@ -1,16 +1,23 @@
-import io;
+import ioPlus;
 
-class Arithmetic_and {
+class HelloWorld extends HelloClass{
+    int a;
+    int[] b;
+    boolean c;
+
 	public static void main(String[] args) {
-		boolean a;
+	    int a;
+	    int[] b;
 
-		a = true && false;
-
-		if(a) {
-			io.print(1);
-		} else {
-			io.print(0);
-		}
-
+        ioPlus.printHelloWorld();
 	}
+
+	public int sayHello(String args) {
+	    int a;
+	    int c;
+        ioPlus.printHelloWorld();
+
+        c = ioPlus.getInt(1);
+        return 1 + 2;
+    }
 }

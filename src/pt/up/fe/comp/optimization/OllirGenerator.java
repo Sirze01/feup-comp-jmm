@@ -139,8 +139,10 @@ public class OllirGenerator extends AJmmVisitor<Boolean, Boolean> {
 
         if(!symbolTable.getReturnType(methodSignature).getName().equals("void")) {
             visit(methodNode.getJmmChild(methodNode.getNumChildren() - 1));
+        }else{
+            code.append(" ".repeat(getNumSpaces(indent)));
+            code.append("ret.V;\n");
         }
-
         indent--;
         code.append(" ".repeat(getNumSpaces(indent)));
         code.append("}\n");
