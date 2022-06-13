@@ -115,6 +115,17 @@ public class SemanticVisitor extends AJmmVisitor<List<Report>, String> {
             addSemanticErrorReport(reports, id0, id0.getKind() + " is not an ID");
 
         String type0 = visit(id0, reports);
+        Symbol s0 = symbolTable.getFieldByName(id0.get("name"));
+
+        if (s0 != null && type0.equals("<Invalid>")) {
+            if (node.getAncestor("MainMethod").isPresent()){
+                addSemanticErrorReport(reports, id1,
+                        "Static method can't assign values to class fields.");
+                return "<Invalid>";
+            }
+            type0 = s0.getType().getName();
+        }
+
         String type1 = visit(id1, reports);
         String type1ExtendsImports = checkExtendsImport(type1);
 
@@ -124,10 +135,10 @@ public class SemanticVisitor extends AJmmVisitor<List<Report>, String> {
             else
                 variables.add(id0.getChildren().get(0).get("name"));
         } else if (type1ExtendsImports == null ||
-                (type1ExtendsImports.equals("import") && checkExtendsImport(type0) == null)) {
-            addSemanticErrorReport(reports, id1,
-                    "Type mismatch in operation. '" + type0 + "' to '" + type1 + "'");
-            return "<Invalid>";
+                (type1ExtendsImports.equals("import") && checkExtendsImport(type0) == null )) {
+                addSemanticErrorReport(reports, id1,
+                        "Type mismatch in operation. '" + type0 + "' to '" + type1 + "'");
+                return "<Invalid>";
         }
 
         return type1;
