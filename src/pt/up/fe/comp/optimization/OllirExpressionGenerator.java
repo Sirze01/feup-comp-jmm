@@ -556,7 +556,7 @@ public class OllirExpressionGenerator extends AJmmVisitor<Boolean, String> {
         StringBuilder newStmt = new StringBuilder();
 
         if (newNode.get("type").equals("intArray")) {
-            String tmp = generateTmp(visit(newNode.getJmmChild(0)));
+            String tmp = generateTmp(newNode.get("type"));
 
             newStmt.append(tmp);
 

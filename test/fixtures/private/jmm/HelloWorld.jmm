@@ -1,8 +1,16 @@
 import io;
-class AddMultConstants {
+
+class Arithmetic_and {
 	public static void main(String[] args) {
-		io.println(1+2*3);
-		io.println(1+2*3+5);
-		io.println(1+2*3+6/3);
+		boolean a;
+
+		a = true && false;
+
+		if(a) {
+			io.print(1);
+		} else {
+			io.print(0);
+		}
+
 	}
 }
