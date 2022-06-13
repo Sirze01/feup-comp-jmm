@@ -9,8 +9,8 @@ public abstract class AstUtils {
     public static Type getNodeType(JmmNode node){
         Type type;
 
-        if (Objects.equals(node.get("type"), "IntArray")) {
-            type = new Type("Int", true);
+        if (Objects.equals(node.get("type"), "intArray")) {
+            type = new Type("int", true);
         } else {
             type = new Type(node.get("type"), false);
         }

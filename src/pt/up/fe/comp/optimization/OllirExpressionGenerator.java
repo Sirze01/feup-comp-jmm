@@ -474,7 +474,7 @@ public class OllirExpressionGenerator extends AJmmVisitor<Boolean, String> {
 
         String then = "Then" + tempCount[0]++;
         String after = "After" + tempCount[0]++;
-        String tmp = generateTmp("Boolean");
+        String tmp = generateTmp("boolean");
 
         ifStmt.append(" ".repeat(getNumSpaces(indent)));
         ifStmt.append(tmp + " :=.bool " + visit(ifNode.getJmmChild(0).getJmmChild(0)) + ";\n");
@@ -503,7 +503,7 @@ public class OllirExpressionGenerator extends AJmmVisitor<Boolean, String> {
         String loop = "Loop" + tempCount[0]++;
         String body = "Body" + tempCount[0]++;
         String end = "EndLoop" + tempCount[0]++;
-        String tmp = generateTmp("Boolean");
+        String tmp = generateTmp("boolean");
 
         whileStmt.append(" ".repeat(getNumSpaces(indent - 1)));
         whileStmt.append(loop + ":\n");
@@ -532,7 +532,7 @@ public class OllirExpressionGenerator extends AJmmVisitor<Boolean, String> {
         StringBuilder before = new StringBuilder();
         StringBuilder newStmt = new StringBuilder();
 
-        if (newNode.get("type").equals("IntArray")) {
+        if (newNode.get("type").equals("intArray")) {
             String tmp = generateTmp(visit(newNode.getJmmChild(0)));
 
             newStmt.append(tmp);
