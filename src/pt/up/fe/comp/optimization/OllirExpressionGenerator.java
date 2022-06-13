@@ -416,7 +416,8 @@ public class OllirExpressionGenerator extends AJmmVisitor<Boolean, String> {
 
         StringBuilder parameters = new StringBuilder();
         for(JmmNode child : accessNode.getJmmChild(1).getJmmChild(1).getChildren()){
-            if(!child.getKind().equals("Literal") && !child.getKind().equals("ID")) {
+            parameters.append(", ");
+            if(child.getKind().equals("BinOp") || child.getKind().equals("UnaryOp")) {
                 String op = visit(child, dummy);
                 String opType = null;
                 JmmNode descendant = child;
@@ -434,7 +435,6 @@ public class OllirExpressionGenerator extends AJmmVisitor<Boolean, String> {
                 tmp = generateTmp(opType);
                 code.append(" ".repeat(getNumSpaces(indent)));
                 code.append(tmp + ":=." + opType + " " + op + ";\n");
-                parameters.append(", ");
                 parameters.append(tmp);
             }
             else{
