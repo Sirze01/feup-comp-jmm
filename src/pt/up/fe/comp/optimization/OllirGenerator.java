@@ -62,6 +62,7 @@ public class OllirGenerator extends AJmmVisitor<Boolean, Boolean> {
             code.append("import ").append(importedPkg).append(";\n");
         }
         code.append('\n');
+
         for (JmmNode child : programNode.getChildren()) {
             visit(child);
         }
@@ -94,7 +95,6 @@ public class OllirGenerator extends AJmmVisitor<Boolean, Boolean> {
         code.append("invokespecial(this, \"<init>\").V;\n");
         code.append(" ".repeat(getNumSpaces(indent)));
         code.append("}\n\n");
-
 
         for (JmmNode child : classNode.getChildren()) {
             visit(child);
@@ -139,8 +139,10 @@ public class OllirGenerator extends AJmmVisitor<Boolean, Boolean> {
 
         if(!symbolTable.getReturnType(methodSignature).getName().equals("void")) {
             visit(methodNode.getJmmChild(methodNode.getNumChildren() - 1));
+        }else{
+            code.append(" ".repeat(getNumSpaces(indent)));
+            code.append("ret.V;\n");
         }
-
         indent--;
         code.append(" ".repeat(getNumSpaces(indent)));
         code.append("}\n");
