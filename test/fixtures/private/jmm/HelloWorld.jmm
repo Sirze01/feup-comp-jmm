@@ -1,23 +1,20 @@
 import ioPlus;
-
-class HelloWorld extends HelloClass{
-    int a;
-    int[] b;
-    boolean c;
+class ArrayAccess {
 
 	public static void main(String[] args) {
-	    int a;
-	    int[] b;
+	    int[] a;
+        a = new int[5];
+        a[0] = 1;
+		a[1] = 2;
+		a[2] = 3;
+		a[3] = 4;
+		a[4] = 5;
 
-        ioPlus.printHelloWorld();
+        ioPlus.printResult(a[0]);
+        ioPlus.printResult(a[1]);
+        ioPlus.printResult(a[2]);
+        ioPlus.printResult(a[3]);
+        ioPlus.printResult(a[4]);
+
 	}
-
-	public int sayHello(String args) {
-	    int a;
-	    int c;
-        ioPlus.printHelloWorld();
-
-        c = ioPlus.getInt(1);
-        return 1 + 2;
-    }
 }

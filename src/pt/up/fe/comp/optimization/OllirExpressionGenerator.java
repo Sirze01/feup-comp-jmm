@@ -267,7 +267,8 @@ public class OllirExpressionGenerator extends AJmmVisitor<Boolean, String> {
         if (s == null) {
             s = ((JmmSymbolTable) symbolTable).getParameter(methodSignature, node.get("name"));
             if (s == null) {
-                s = symbolTable.getFields().stream().filter(field -> field.getName().equals(node.get("name"))).collect(Collectors.toList()).get(0);
+                List<Symbol> symbolList = symbolTable.getFields().stream().filter(field -> field.getName().equals(node.get("name"))).collect(Collectors.toList());
+                s =  symbolList.size() > 0 ? symbolList.get(0) : null;
             }
         }
         return s;
@@ -417,21 +418,26 @@ public class OllirExpressionGenerator extends AJmmVisitor<Boolean, String> {
         StringBuilder parameters = new StringBuilder();
         for(JmmNode child : accessNode.getJmmChild(1).getJmmChild(1).getChildren()){
             parameters.append(", ");
-            if(child.getKind().equals("BinOp") || child.getKind().equals("UnaryOp")) {
+            if(child.getKind().equals("BinOp") || child.getKind().equals("UnaryOp") ||
+                    child.getKind().equals("ArrayExpression")) {
                 String op = visit(child, dummy);
                 String opType = null;
                 JmmNode descendant = child;
 
-                while(true) {
-                    Optional<String> opOptType = descendant.getOptional("type");
-                    if (opOptType.isPresent()) {
-                        opType = opOptType.get();
-                        break;
-                    } else {
-                        descendant = descendant.getJmmChild(0);
+                if(child.getKind().equals("ArrayExpression")){
+                    opType = "int";
+                }else {
+
+                    while (true) {
+                        Optional<String> opOptType = descendant.getOptional("type");
+                        if (opOptType.isPresent()) {
+                            opType = opOptType.get();
+                            break;
+                        } else {
+                            descendant = descendant.getJmmChild(0);
+                        }
                     }
                 }
-
                 tmp = generateTmp(opType);
                 code.append(" ".repeat(getNumSpaces(indent)));
                 code.append(tmp + ":=." + opType + " " + op + ";\n");
@@ -442,6 +448,28 @@ public class OllirExpressionGenerator extends AJmmVisitor<Boolean, String> {
             }
         }
 
+        // Invocation type
+        // if var in var table -> invokevirtual
+        // if imported class -> invokestatic
+        String invocation = "";
+
+        if(accessNode.getJmmChild(0).getKind().equals("Literal")){
+            invocation = "invokevirtual";
+        }
+        else {
+            Symbol variableWithMethod = findSymbol(accessNode.getJmmChild(0));
+            if (variableWithMethod != null) {
+                invocation = "invokevirtual";
+            } else {
+                if (symbolTable.getImports().contains(accessNode.getJmmChild(0).get("name"))) {
+                    invocation = "invokestatic";
+                } else {
+                    invocation = "invokestatic";
+                }
+            }
+        }
+
+
         if (methods.size() == 0) {
             Optional<JmmNode> ancestor = accessNode.getAncestor("IDAssignment");
             if(ancestor.isPresent()){
@@ -450,7 +478,7 @@ public class OllirExpressionGenerator extends AJmmVisitor<Boolean, String> {
                 String type = OllirGeneratorUtils.toOllirType(variable.getType());
 
                 accessNode.put("ollirType", type);
-                accessStmt.append("invokestatic(" +
+                accessStmt.append(invocation + "(" +
                         exp + ", \"" +
                         accessNode.getJmmChild(1).getJmmChild(0).get("name") + "\"" + parameters + ")." + type);
 
@@ -458,7 +486,7 @@ public class OllirExpressionGenerator extends AJmmVisitor<Boolean, String> {
             }
 
             accessNode.put("ollirType", ".V");
-            accessStmt.append("invokestatic(" +
+            accessStmt.append(invocation + "(" +
                     exp + ", \"" +
                     accessNode.getJmmChild(1).getJmmChild(0).get("name") + "\"" + parameters + ").V");
 
@@ -468,7 +496,7 @@ public class OllirExpressionGenerator extends AJmmVisitor<Boolean, String> {
         if (methods.size() == 1) {
             String type = OllirGeneratorUtils.toOllirType(methods.get(0).getReturnType());
             accessNode.put("ollirType", type);
-            accessStmt.append("invokevirtual(" +
+            accessStmt.append(invocation + "(" +
                     exp + ", \"" +
                     accessNode.getJmmChild(1).getJmmChild(0).get("name") + "\"" +
                     parameters + ")." + type);

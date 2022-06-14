@@ -66,7 +66,7 @@ public abstract class OllirGeneratorUtils {
 
     public static String getCodeLiteral(SymbolTable symbolTable, JmmNode literalNode) {
         if (literalNode.get("value").equals("this")) {
-            return "$0.this." + symbolTable.getClassName();
+            return "this";
         }
 
         if (literalNode.get("value").equals("true")){
