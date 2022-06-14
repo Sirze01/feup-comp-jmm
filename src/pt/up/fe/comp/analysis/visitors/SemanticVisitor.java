@@ -410,6 +410,12 @@ public class SemanticVisitor extends AJmmVisitor<List<Report>, String> {
         if (node.getJmmChild(0).getKind().equals("Literal")
                 && node.getJmmChild(0).get("value").equals("this")
                ) {
+            if (node.getAncestor("MainMethod").isPresent()){
+                addSemanticErrorReport(reports, node,
+                        "Static method main can't access 'this'.");
+                return "<Invalid>";
+            }
+
             JmmNode expressionNode = node.getJmmChild(1);
             if (symbolTable.getSuper() == null){
                 if (symbolTable.getMethodByName(expressionNode.getJmmChild(0).get("name")) == null) {
