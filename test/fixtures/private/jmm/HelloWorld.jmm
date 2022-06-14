@@ -1,23 +1,13 @@
-import ioPlus;
+import GetterAndSetter;
+import io;
+class PrintOtherClassInline {
 
-class HelloWorld extends HelloClass{
-    int a;
-    int[] b;
-    boolean c;
-
-	public static void main(String[] args) {
-	    int a;
-	    int[] b;
-
-        ioPlus.printHelloWorld();
+	public static void main(String[] args){
+		GetterAndSetter b;
+		int content;
+		b = new GetterAndSetter();
+		content = b.setA(10);
+		content = b.getA();
+		io.print(content);
 	}
-
-	public int sayHello(String args) {
-	    int a;
-	    int c;
-        ioPlus.printHelloWorld();
-
-        c = ioPlus.getInt(1);
-        return 1 + 2;
-    }
 }
