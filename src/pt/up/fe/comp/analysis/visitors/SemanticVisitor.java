@@ -29,6 +29,7 @@ public class SemanticVisitor extends AJmmVisitor<List<Report>, String> {
         addVisit("MemberArgs", this::visitMemberArgs);
         //expressions
         addVisit("ArrayExpression", this::visitArrayExpression);
+        //addVisit("ArrayAssignment", this::visitArrayAssignment);
         addVisit("AccessExpression", this::visitAccessExpression);
         addVisit("CallExpression", this::visitCallExpression);
         addVisit("ParenthesisExpression", this::visitParenthesisExpression);
@@ -49,6 +50,35 @@ public class SemanticVisitor extends AJmmVisitor<List<Report>, String> {
 
         setDefaultVisit(this::defaultVisit);
     }
+/*
+    private String visitArrayAssignment(JmmNode node, List<Report> reports) {
+        Type arrayType = getNodeType(node.getJmmChild(1).getJmmChild(0));
+        System.out.println(node.getJmmChild(1).getJmmChild(0));
+        Type assignee = getNodeType(node.getJmmChild(0));
+        String assigneeType, arrayTypeName;
+        if (assignee != null)
+            assigneeType = assignee.getName();
+        else
+            assigneeType = visit(node.getJmmChild(0));
+
+        if (arrayType != null)
+            arrayTypeName = arrayType.getName();
+        else
+            arrayTypeName = visit(node.getJmmChild(1).getJmmChild(0));
+
+        System.out.println("HELLLOOOOO");
+
+        System.out.println(arrayTypeName);
+        System.out.println(assigneeType);
+        if (arrayTypeName.equals(assigneeType)) {
+            System.out.println("passed");
+            return assigneeType;
+        }
+
+        addSemanticErrorReport(reports, node,
+                "Type mismatch in array assignment '" + assigneeType + "' to '" + arrayType.getName() + "'");
+        return "<Invalid>";
+    }*/
 
 
     /**
@@ -148,9 +178,13 @@ public class SemanticVisitor extends AJmmVisitor<List<Report>, String> {
                 variables.add(id0.getChildren().get(0).get("name"));
         } else if (type1ExtendsImports == null ||
                 (type1ExtendsImports.equals("import") && type0.equals(symbolTable.getClassName()))) {
-                addSemanticErrorReport(reports, id1,
-                        "Type mismatch in operation. '" + type0 + "' to '" + type1 + "'");
-                return "<Invalid>";
+            System.out.println("id0: " + id0);
+            System.out.println("id1: " + id1);
+            System.out.println("type0: " + type0);
+            System.out.println("type1: " + type1);
+
+            addSemanticErrorReport(reports, id1, "Type mismatch in operations. '" + type0 + "' to '" + type1 + "'");
+            return "<Invalid>";
         }
 
         return type1;
@@ -219,6 +253,9 @@ public class SemanticVisitor extends AJmmVisitor<List<Report>, String> {
         JmmNode lhs = node.getJmmChild(0);
         JmmNode rhs = node.getJmmChild(1);
 
+        System.out.println("lhs: " + lhs);
+        System.out.println("rhs: " + rhs);
+
         Type lhsType = getNodeType(lhs);
         Type rhsType = getNodeType(rhs);
 
@@ -229,26 +266,27 @@ public class SemanticVisitor extends AJmmVisitor<List<Report>, String> {
             lhsTypeName = lhsType.getName();
             lhsIsArray = lhsType.isArray();
         } else lhsTypeName = visit(lhs, reports);
-
+        System.out.println("lhsTypeName: " + lhsTypeName);
         if (rhsType != null){
             rhsTypeName = rhsType.getName();
             rhsIsArray = rhsType.isArray();
         } else rhsTypeName = visit(rhs, reports);
+        System.out.println("rhsTypeName: " + rhsTypeName);
 
 
+        System.out.println("before");
         if (!lhsTypeName.equals(rhsTypeName) || rhsIsArray || lhsIsArray) {
             addSemanticErrorReport(reports, rhs,
                     "Bin OP: Type mismatch in operation. <" + lhsType + "> to <" + rhsType + ">");
             return "<Invalid>";
         }
-
         List<String> intOp = new ArrayList<>(Arrays.asList("Mult", "Div", "Sub", "Add", "Less"));
 
         if (intOp.contains(node.get("op"))){
             if ((!lhsTypeName.equals("int")
                     && !lhsTypeName.equals("import")
                     && !lhsTypeName.equals("extends"))) {
-
+                System.out.println("error here");
                     addSemanticErrorReport(reports, rhs,
                             "BinOP: Operations must be boolean or integers. Used '" + lhsTypeName + "' and '" + rhsTypeName + "'");
                     return "<Invalid>";
@@ -337,11 +375,12 @@ public class SemanticVisitor extends AJmmVisitor<List<Report>, String> {
      */
     private String visitArrayExpression(JmmNode node, List<Report> reports){
         JmmMethod method = symbolTable.getParentMethodName(node);
-
+        JmmNode nodeToVisit;
         String name;
+        Type type;
         if (node.getJmmParent().getKind().equals("ArrayAssignment")) {
             name = node.getJmmParent().getJmmChild(0).get("name");
-
+            nodeToVisit = node.getJmmParent().getJmmChild(0);
             String assignedType = visit(node.getJmmParent().getJmmChild(2), reports);
 
             Symbol s = symbolTable.getLocalVar(method.toString(), name);
@@ -353,44 +392,50 @@ public class SemanticVisitor extends AJmmVisitor<List<Report>, String> {
                 }
             }
 
+        } else nodeToVisit = node.getJmmChild(0);
+
+        type = getNodeType(nodeToVisit);
+
+        if (type != null) {
+            if (!type.isArray()) {
+                addSemanticErrorReport(reports, nodeToVisit, "Variable '" + type.getName() + "' cannot be indexed.");
+                return "<Invalid>";
+            }
         }
-        else name = node.getJmmChild(0).get("name");
-
-        Symbol s = symbolTable.getLocalVar(method.toString(), name);
-
-        if (!s.getType().isArray()){
-            addSemanticErrorReport(reports, node, "Variable '" + s.getName() + "' cannot be indexed.");
-            return "<Invalid>";
-        }
-
         for (JmmNode child : node.getChildren()) {
             if (child.getKind().equals("Literal")) {
                 String idxType = visit(child, reports);
+                /*
+                System.out.println("child: " + child);
+                System.out.println("idxType: " + idxType);*/
                 if (!idxType.equals("int")) {
-                    addSemanticErrorReport(reports, node, "Array indexes must be of type int.");
+                    addSemanticErrorReport(reports, node, "Array indexes must be of type inty.");
                     return "<Invalid>";
                 }
             } else if (!child.equals(node.getJmmChild(0))) {
-                Symbol idx = symbolTable.getLocalVar(method.toString(), child.get("name"));
-                if (!idx.getType().getName().equals("int")){
+                System.out.println("child: " + child);
+                String idx = getNodeType(child).getName();
+                //Symbol idx = symbolTable.getLocalVar(method.toString(), child.get("name"));
+                if (!idx.equals("int")){
                     addSemanticErrorReport(reports, node,
-                            "Array indexes must be of type int.");
+                            "Array indexes must be of type ints.");
                     return "<Invalid>";
                 }
 
             } else {
-                Symbol childSymbol = symbolTable.getLocalVar(method.toString(), child.get("name"));
+                Type childType = getNodeType(child);
                 String idxType;
-                if (childSymbol == null)
+                if (childType == null) {
                     idxType = visit(child, reports);
-                else idxType = childSymbol.getType().getName();
+                } else idxType = childType.getName();
                 if (!idxType.equals("int")) {
                     addSemanticErrorReport(reports, node, "Array indexes must be of type int.");
                     return "<Invalid>";
                 }
             }
         }
-
+        if (type != null)
+            return type.getName();
         return "";
     }
 
