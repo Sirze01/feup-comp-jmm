@@ -293,6 +293,7 @@ public class SemanticVisitor extends AJmmVisitor<List<Report>, String> {
         if(ancestor == null) return "";
         int i = 0;
         for(JmmNode child: node.getChildren()){
+            System.out.println(child);
             String methodName = node.getJmmParent().getJmmChild(0).get("name");
             if(child.getKind().equals("ID")){
                 String symbolName = child.get("name");
@@ -312,11 +313,14 @@ public class SemanticVisitor extends AJmmVisitor<List<Report>, String> {
                         childType = symbolTable.getClassName();
                     }
                 }
-                if (symbolTable.getMethodByName(methodName) != null
-                        && i < symbolTable.getMethodByName(methodName).getParameters().size()
-                        && !symbolTable.getMethodByName(methodName).getParameters().get(i).getType().getName().equals(childType)) {
-                    addSemanticErrorReport(reports, child.get("line") != null ? Integer.parseInt(child.get("line")) : 0, Integer.parseInt(child.get("column")),
-                            "Argument is of wrong type " + symbolTable.getMethodByName(methodName).getParameters().get(i).getType().getName() + " expected.");
+                if (!child.getKind().equals("AccessExpression")) {
+                    if (symbolTable.getMethodByName(methodName) != null
+                            && i < symbolTable.getMethodByName(methodName).getParameters().size()
+                            && !symbolTable.getMethodByName(methodName).getParameters().get(i).getType().getName().equals(childType)) {
+
+                        addSemanticErrorReport(reports, child.get("line") != null ? Integer.parseInt(child.get("line")) : 0, Integer.parseInt(child.get("column")),
+                                "Argument is of wrong type, " + symbolTable.getMethodByName(methodName).getParameters().get(i).getType().getName() + " expected.");
+                    }
                 }
             }
             visit(child, reports);
