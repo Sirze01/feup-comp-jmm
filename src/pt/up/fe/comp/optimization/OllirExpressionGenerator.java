@@ -424,20 +424,8 @@ public class OllirExpressionGenerator extends AJmmVisitor<Boolean, String> {
                 String opType = null;
                 JmmNode descendant = child;
 
-                if(child.getKind().equals("ArrayExpression") || child.getKind().equals("AccessExpression")){
-                    opType = "int";
-                }else {
+                opType = "int";
 
-                    while (true) {
-                        Optional<String> opOptType = descendant.getOptional("type");
-                        if (opOptType.isPresent()) {
-                            opType = opOptType.get();
-                            break;
-                        } else {
-                            descendant = descendant.getJmmChild(0);
-                        }
-                    }
-                }
                 tmp = generateTmp(opType);
                 code.append(" ".repeat(getNumSpaces(indent)));
                 code.append(tmp + ":=." + opType + " " + op + ";\n");
