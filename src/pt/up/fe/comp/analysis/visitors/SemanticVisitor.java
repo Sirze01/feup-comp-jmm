@@ -29,7 +29,6 @@ public class SemanticVisitor extends AJmmVisitor<List<Report>, String> {
         addVisit("MemberArgs", this::visitMemberArgs);
         //expressions
         addVisit("ArrayExpression", this::visitArrayExpression);
-        //addVisit("ArrayAssignment", this::visitArrayAssignment);
         addVisit("AccessExpression", this::visitAccessExpression);
         addVisit("CallExpression", this::visitCallExpression);
         addVisit("ParenthesisExpression", this::visitParenthesisExpression);
@@ -66,8 +65,6 @@ public class SemanticVisitor extends AJmmVisitor<List<Report>, String> {
     }
 
     private String visitLiteral(JmmNode node, List<Report> reports){
-        System.out.println(node);
-
         return node.get("type");
     }
 
@@ -374,7 +371,7 @@ public class SemanticVisitor extends AJmmVisitor<List<Report>, String> {
                 String idxType = visit(child, reports);
 
                 if (!idxType.equals("int")) {
-                    addSemanticErrorReport(reports, node, "Array indexes must be of type inty.");
+                    addSemanticErrorReport(reports, node, "Array indexes must be of type int.");
                     return "<Invalid>";
                 }
             } else if (!child.equals(node.getJmmChild(0))) {
@@ -405,8 +402,6 @@ public class SemanticVisitor extends AJmmVisitor<List<Report>, String> {
     private String visitAccessExpression(JmmNode node, List<Report> reports){
 
         JmmNode child0 = node.getJmmChild(0);
-        System.out.println(node);
-        System.out.println("CHILD0: " + child0);
 
         if (!isThis(child0).isEmpty()) {
             if (node.getAncestor("MainMethod").isPresent()){
@@ -578,16 +573,6 @@ public class SemanticVisitor extends AJmmVisitor<List<Report>, String> {
         if (symbolTable.getSuper() != null && nodeType.equals(symbolTable.getClassName())) return "extends";
         if (nodeType.equals(symbolTable.getSuper())) return "extends";
         return null;
-    }
-
-    private String isClassObject(JmmNode node) {
-        JmmMethod method = symbolTable.getParentMethodName(node);
-        if (method != null && node.getAttributes().contains("name")) {
-            String type = symbolTable.getLocalVar(method.toString(), node.get("name")).getType().getName();
-            if (type.equals(symbolTable.getClassName()))
-                return symbolTable.getSuper()==null? symbolTable.getClassName() : symbolTable.getSuper();
-        }
-        return isThis(node);
     }
 
     private String isThis(JmmNode node){
