@@ -419,12 +419,12 @@ public class OllirExpressionGenerator extends AJmmVisitor<Boolean, String> {
         for(JmmNode child : accessNode.getJmmChild(1).getJmmChild(1).getChildren()){
             parameters.append(", ");
             if(child.getKind().equals("BinOp") || child.getKind().equals("UnaryOp") ||
-                    child.getKind().equals("ArrayExpression")) {
+                    child.getKind().equals("ArrayExpression") || (child.getKind().equals("AccessExpression") && child.getNumChildren() == 1)) {
                 String op = visit(child, dummy);
                 String opType = null;
                 JmmNode descendant = child;
 
-                if(child.getKind().equals("ArrayExpression")){
+                if(child.getKind().equals("ArrayExpression") || child.getKind().equals("AccessExpression")){
                     opType = "int";
                 }else {
 
