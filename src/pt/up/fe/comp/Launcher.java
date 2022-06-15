@@ -12,6 +12,8 @@ import pt.up.fe.specs.util.SpecsLogs;
 import pt.up.fe.specs.util.SpecsSystem;
 
 import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
@@ -63,8 +65,44 @@ public class Launcher {
         // Check if there are optimization errors
         TestUtils.noErrors(optimizerResult.getReports());
 
+        try {
+            File ollirFile = new File(System.getProperty("user.dir")+ "/" + optimizerResult.getOllirClass().getClassName() + ".ollir");
+            if (ollirFile.createNewFile()) {
+                try(FileWriter fileWriter = new FileWriter(ollirFile.getAbsolutePath())){
+                    fileWriter.write(optimizerResult.getOllirCode());
+                }
+            } else {
+                System.out.println("File already exists.");
+            }
+        } catch (IOException e) {
+            System.out.println("An error occurred.");
+            e.printStackTrace();
+        }
+
+
         JmmBackend backend = new JmmBackend();
         JasminResult backendResult = backend.toJasmin(optimizerResult);
         TestUtils.noErrors(backendResult.getReports());
+
+        try {
+            File jasminFile = new File(System.getProperty("user.dir")+ "/" + backendResult.getClassName() + ".j");
+            if (jasminFile.createNewFile()) {
+                try(FileWriter fileWriter = new FileWriter(jasminFile.getAbsolutePath())){
+                    fileWriter.write(backendResult.getJasminCode());
+                }
+            } else {
+                System.out.println("File already exists.");
+            }
+
+            File classFile = new File(System.getProperty("user.dir")+ "/" + backendResult.getClassName() + ".class");
+            if (classFile.createNewFile()) {
+                backendResult.compile(classFile);
+            } else {
+                System.out.println("File already exists.");
+            }
+        } catch (IOException e) {
+            System.out.println("An error occurred.");
+            e.printStackTrace();
+        }
     }
 }
