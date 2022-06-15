@@ -66,6 +66,8 @@ public class SemanticVisitor extends AJmmVisitor<List<Report>, String> {
     }
 
     private String visitLiteral(JmmNode node, List<Report> reports){
+        System.out.println(node);
+
         return node.get("type");
     }
 
@@ -156,7 +158,6 @@ public class SemanticVisitor extends AJmmVisitor<List<Report>, String> {
     }
 
     private String visitID(JmmNode node, List<Report> reports){
-
         JmmMethod method = symbolTable.getParentMethodName(node);
 
         Optional<JmmNode> ancestor = node.getAncestor("MainMethod").isPresent() ?
@@ -205,6 +206,12 @@ public class SemanticVisitor extends AJmmVisitor<List<Report>, String> {
             return s.getType().isArray() ? s.getType().getName() + "ArrayExpression" : s.getType().getName();
         else if (checkExtendsImport(name.get()) != null)
             return name.get();
+
+
+        if(node.getAttributes().contains("name") &&
+                symbolTable.getParameter(method.toString(), node.get("name")) != null){
+            return getNodeType(node).getName();
+        }
 
         return "<Invalid>";
     }
@@ -293,7 +300,6 @@ public class SemanticVisitor extends AJmmVisitor<List<Report>, String> {
         if(ancestor == null) return "";
         int i = 0;
         for(JmmNode child: node.getChildren()){
-            System.out.println(child);
             String methodName = node.getJmmParent().getJmmChild(0).get("name");
             if(child.getKind().equals("ID")){
                 String symbolName = child.get("name");
