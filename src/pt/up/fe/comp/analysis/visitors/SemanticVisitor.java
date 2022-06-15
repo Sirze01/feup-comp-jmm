@@ -395,9 +395,6 @@ public class SemanticVisitor extends AJmmVisitor<List<Report>, String> {
     }
 
     private String visitAccessExpression(JmmNode node, List<Report> reports){
-        System.out.println("node: " + node);
-        System.out.println("children: " + node.getChildren());
-
         /*
         String type;
         if (getNodeType(node.getJmmChild(0)) != null) type = getNodeType(node).getName();
@@ -434,10 +431,8 @@ public class SemanticVisitor extends AJmmVisitor<List<Report>, String> {
                 }
             }
         } else if (node.getJmmChild(0).getKind().equals("ID")){
-            System.out.println("child: " + node.getJmmChild(0));
             Type childT = getNodeType(node.getJmmChild(0));
             String childType = childT == null ? visit(node.getJmmChild(0), reports) : getNodeType(node.getJmmChild(0)).getName();
-            System.out.println("childType: " + childType);
 
             JmmMethod method = symbolTable.getParentMethodName(node);
 
@@ -452,10 +447,8 @@ public class SemanticVisitor extends AJmmVisitor<List<Report>, String> {
                 return "<Inherited>";
 
             String symbolName = child0.get("name");
-            System.out.println("OIOIOI");
             Symbol symbol = symbolTable.getLocalVar(method.toString(), symbolName);
             if (symbol != null) {
-                System.out.println("symbol: " + symbol);
                 if (checkExtendsImport(childType) == null && !childType.equals("")) {
                     if (symbolTable.getMethodByName(node.getJmmChild(1).getJmmChild(0).get("name")) == null) {
                         addSemanticErrorReport(reports,
@@ -467,9 +460,6 @@ public class SemanticVisitor extends AJmmVisitor<List<Report>, String> {
                         return "<Invalid>";
                     }
                 }
-                System.out.println("return: " + node.getAncestor("ReturnExpression").isPresent() );
-                System.out.println("returned method: " + childType);
-                System.out.println("return type expected:" + method.getReturnType().getName());
                 if (node.getAncestor("ReturnExpression").isPresent()) {
                     if (method.getReturnType().getName().equals(childType))
                         return childType;
@@ -484,7 +474,6 @@ public class SemanticVisitor extends AJmmVisitor<List<Report>, String> {
 
             }
 
-            System.out.println("Too far");
             if (checkExtendsImport(childType) == null
                     && !(childType.equals(symbolTable.getClassName()) && symbolTable.getMethodByName(node.getJmmChild(1).getJmmChild(0).get("name")) != null)
             ) {
