@@ -66,13 +66,17 @@ public class Launcher {
         TestUtils.noErrors(optimizerResult.getReports());
 
         try {
-            File ollirFile = new File(System.getProperty("user.dir")+ "/" + optimizerResult.getOllirClass().getClassName() + ".ollir");
-            if (ollirFile.createNewFile()) {
-                try(FileWriter fileWriter = new FileWriter(ollirFile.getAbsolutePath())){
-                    fileWriter.write(optimizerResult.getOllirCode());
+            File ollirFile = new File(System.getProperty("user.dir") + "/" + optimizerResult.getOllirClass().getClassName() + ".ollir");
+            if (!ollirFile.createNewFile()) {
+                ollirFile.delete();
+
+                if(!ollirFile.createNewFile()){
+                    System.out.println("Error writing OLLIR file");
                 }
-            } else {
-                System.out.println("File already exists.");
+            }
+
+            try(FileWriter fileWriter = new FileWriter(ollirFile.getAbsolutePath())){
+                fileWriter.write(optimizerResult.getOllirCode());
             }
         } catch (IOException e) {
             System.out.println("An error occurred.");
@@ -86,20 +90,29 @@ public class Launcher {
 
         try {
             File jasminFile = new File(System.getProperty("user.dir")+ "/" + backendResult.getClassName() + ".j");
-            if (jasminFile.createNewFile()) {
-                try(FileWriter fileWriter = new FileWriter(jasminFile.getAbsolutePath())){
-                    fileWriter.write(backendResult.getJasminCode());
+            if (!jasminFile.createNewFile()) {
+                jasminFile.delete();
+
+                if(!jasminFile.createNewFile()){
+                    System.out.println("Error writing Jasmin file");
                 }
-            } else {
-                System.out.println("File already exists.");
+
             }
 
-            File classFile = new File(System.getProperty("user.dir")+ "/" + backendResult.getClassName() + ".class");
-            if (classFile.createNewFile()) {
-                backendResult.compile(classFile);
-            } else {
-                System.out.println("File already exists.");
+            try(FileWriter fileWriter = new FileWriter(jasminFile.getAbsolutePath())){
+                fileWriter.write(backendResult.getJasminCode());
             }
+
+            File classDir = new File(System.getProperty("user.dir")+ "/.");
+            File classFile = new File(System.getProperty("user.dir")+ "/" + backendResult.getClassName() + ".class");
+
+            if (classFile.exists()) {
+                if(!classFile.delete()){
+                    System.out.println("Error writing class file");
+                }
+            }
+
+            backendResult.compile(classDir);
         } catch (IOException e) {
             System.out.println("An error occurred.");
             e.printStackTrace();
