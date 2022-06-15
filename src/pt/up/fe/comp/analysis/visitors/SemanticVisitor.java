@@ -454,7 +454,7 @@ public class SemanticVisitor extends AJmmVisitor<List<Report>, String> {
             String symbolName = child0.get("name");
             Symbol symbol = symbolTable.getLocalVar(method.toString(), symbolName);
             if (symbol != null) {
-                if (checkExtendsImport(childType) == null && !childType.equals("")) {
+                if (checkExtendsImport(childType) == null) {
                     if (symbolTable.getMethodByName(node.getJmmChild(1).getJmmChild(0).get("name")) == null) {
                         addSemanticErrorReport(reports,
                                 node.getJmmChild(1).getJmmChild(0).get("line") != null ?
