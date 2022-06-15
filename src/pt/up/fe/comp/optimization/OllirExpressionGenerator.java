@@ -425,7 +425,18 @@ public class OllirExpressionGenerator extends AJmmVisitor<Boolean, String> {
                 code.append(tmp + ":=." + OllirGeneratorUtils.toOllirType(opType) + " " + op + ";\n");
                 parameters.append(tmp);
             } else {
-                parameters.append(visit(child, dummy));
+                if(child.getKind().equals("AccessExpression")){
+                    String op = visit(child, dummy);
+                    String opType = op.substring(op.lastIndexOf(".") + 1);
+
+                    tmp = generateTmp(opType);
+                    code.append(" ".repeat(getNumSpaces(indent)));
+                    code.append(tmp + ":=." + OllirGeneratorUtils.toOllirType(opType) + " " + op + ";\n");
+                    parameters.append(tmp);
+                }else{
+                    parameters.append(visit(child, dummy));
+
+                }
             }
         }
 
