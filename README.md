@@ -4,6 +4,7 @@
 
 ## **GROUP: 1C**
 
+
 | NAME              |      NR       |  GRADE | CONTRIBUTION |
 |-------------------|:-------------:|:------:|:------------:|
 | Ana Luísa Marques | 201907565     | 18     | 25%          |
@@ -106,13 +107,3 @@ To configure the name of the class that implements the JmmParser interface, use 
 ### Compilation Stages
 
 The project is divided in four compilation stages, that you will be developing during the semester. The stages are Parser, Analysis, Optimization and Backend, and for each of these stages there is a corresponding Java interface that you will have to implement (e.g. for the Parser stage, you have to implement the interface JmmParser).
-
-
-### config.properties
-
-The testing framework, which uses the class TestUtils located in ``src-lib/pt/up/fe/comp``, has methods to test each of the four compilation stages (e.g., ``TestUtils.parse()`` for testing the Parser stage).
-
-In order for the test class to find your implementations for the stages, it uses the file ``config.properties`` that is in root of your repository. It has four fields, one for each stage (i.e. ``ParserClass``, ``AnalysisClass``, ``OptimizationClass``, ``BackendClass``), and initially it only has one value, ``pt.up.fe.comp.SimpleParser``, associated with the first stage.
-
-During the development of your compiler you will update this file in order to setup the classes that implement each of the compilation stages.
-    
