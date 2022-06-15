@@ -128,7 +128,6 @@ public class SemanticVisitor extends AJmmVisitor<List<Report>, String> {
             type0 = s0.getType().getName();
         }
 
-
         String type1 = visit(id1, reports);
 
         JmmMethod method = symbolTable.getParentMethodName(node);
@@ -138,6 +137,9 @@ public class SemanticVisitor extends AJmmVisitor<List<Report>, String> {
                 type1 = symbolTable.getParameter(method.toString(), id1.get("name")).getType().getName();
 
         String type1ExtendsImports = checkExtendsImport(type1);
+
+        if (type1.equals("<Inherited>"))
+            type1 = type0;
 
         if ((type0.equals("intArray") && type1.equals("int")) || type0.equals(type1)) {
             if (id0.getKind().equals("ID"))
@@ -293,8 +295,6 @@ public class SemanticVisitor extends AJmmVisitor<List<Report>, String> {
     private String visitMemberArgs(JmmNode node, List<Report> reports){
         JmmMethod ancestor = symbolTable.getParentMethodName(node);
         if(ancestor == null) return "";
-
-
         int i = 0;
         for(JmmNode child: node.getChildren()){
             String methodName = node.getJmmParent().getJmmChild(0).get("name");
@@ -395,9 +395,6 @@ public class SemanticVisitor extends AJmmVisitor<List<Report>, String> {
     }
 
     private String visitAccessExpression(JmmNode node, List<Report> reports){
-        System.out.println("node: " + node);
-        System.out.println("children: " + node.getChildren());
-
         /*
         String type;
         if (getNodeType(node.getJmmChild(0)) != null) type = getNodeType(node).getName();
@@ -434,12 +431,19 @@ public class SemanticVisitor extends AJmmVisitor<List<Report>, String> {
                 }
             }
         } else if (node.getJmmChild(0).getKind().equals("ID")){
-            System.out.println("child: " + node.getJmmChild(0));
             Type childT = getNodeType(node.getJmmChild(0));
-            System.out.println("childT: " + childT);
             String childType = childT == null ? visit(node.getJmmChild(0), reports) : getNodeType(node.getJmmChild(0)).getName();
-            System.out.println("childType: " + childType);
             JmmMethod method = symbolTable.getParentMethodName(node);
+
+            if ((childType.equals(symbolTable.getClassName()) || childType.equals(symbolTable.getSuper())) && symbolTable.getSuper()!=null)
+                if (node.getJmmChild(1).getKind().equals("CallExpression")) {
+                    JmmNode calledMethod = node.getJmmChild(1).getJmmChild(0);
+                    if (calledMethod.getAttributes().contains("name")
+                            &&  symbolTable.getMethodByName(calledMethod.get("name")) == null)
+                        return "<Inherited>";
+                }
+            if (checkImports(childType))
+                return "<Inherited>";
 
             String symbolName = child0.get("name");
 
@@ -474,7 +478,6 @@ public class SemanticVisitor extends AJmmVisitor<List<Report>, String> {
 
         }
 
-        System.out.println("HERE");
         String ret = "Method";
         for(JmmNode child: node.getChildren()) {
             ret = visit(child, reports);
