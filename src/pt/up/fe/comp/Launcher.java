@@ -14,9 +14,6 @@ import pt.up.fe.specs.util.SpecsSystem;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
@@ -68,60 +65,44 @@ public class Launcher {
         // Check if there are optimization errors
         TestUtils.noErrors(optimizerResult.getReports());
 
+        try {
+            File ollirFile = new File(System.getProperty("user.dir")+ "/" + optimizerResult.getOllirClass().getClassName() + ".ollir");
+            if (ollirFile.createNewFile()) {
+                try(FileWriter fileWriter = new FileWriter(ollirFile.getAbsolutePath())){
+                    fileWriter.write(optimizerResult.getOllirCode());
+                }
+            } else {
+                System.out.println("File already exists.");
+            }
+        } catch (IOException e) {
+            System.out.println("An error occurred.");
+            e.printStackTrace();
+        }
+
+
         JmmBackend backend = new JmmBackend();
         JasminResult backendResult = backend.toJasmin(optimizerResult);
         TestUtils.noErrors(backendResult.getReports());
 
-        Path mainDir = Paths.get("Results/");
         try {
-            if (!Files.exists(mainDir)) {
-                Files.createDirectory(mainDir);
+            File jasminFile = new File(System.getProperty("user.dir")+ "/" + backendResult.getClassName() + ".j");
+            if (jasminFile.createNewFile()) {
+                try(FileWriter fileWriter = new FileWriter(jasminFile.getAbsolutePath())){
+                    fileWriter.write(backendResult.getJasminCode());
+                }
+            } else {
+                System.out.println("File already exists.");
+            }
+
+            File classFile = new File(System.getProperty("user.dir")+ "/" + backendResult.getClassName() + ".class");
+            if (classFile.createNewFile()) {
+                backendResult.compile(classFile);
+            } else {
+                System.out.println("File already exists.");
             }
         } catch (IOException e) {
+            System.out.println("An error occurred.");
             e.printStackTrace();
         }
-
-        Path path = Paths.get("Results/" + optimizerResult.getSymbolTable().getClassName() + "/");
-        try {
-            if (!Files.exists(path)) {
-                Files.createDirectory(path);
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-        try {
-            FileWriter myWriter = new FileWriter(path + "/ast.json");
-            myWriter.write(parserResult.toJson());
-            myWriter.close();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-        try {
-            FileWriter myWriter = new FileWriter(path + "/symbolTable.txt");
-            myWriter.write(analysisResult.getSymbolTable().print());
-            myWriter.close();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-        try {
-            FileWriter myWriter = new FileWriter(path + "/ollir.ollir");
-            myWriter.write(optimizerResult.getOllirCode());
-            myWriter.close();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-        try {
-            FileWriter myWriter = new FileWriter(path + "/jasmin.j");
-            myWriter.write(backendResult.getJasminCode());
-            myWriter.close();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-        backendResult.compile(path.toFile());
     }
 }
