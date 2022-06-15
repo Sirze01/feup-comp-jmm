@@ -83,7 +83,8 @@ public abstract class OllirGeneratorUtils {
 
     public static String getTypeFromOllirVar(String ollirVar){
         StringBuilder opType = new StringBuilder();
-        String[] split = ollirVar.split("\\.");
+        String vartype = ollirVar.substring(0, ollirVar.contains("]") ? ollirVar.indexOf("]") : ollirVar.length());
+        String[] split = vartype.split("\\.");
         for (int i = 0; i < split.length; i++) {
             if (split[i].contains("$")) {
                 i++;
