@@ -221,10 +221,39 @@ public class Jasmin {
                 return buildBinaryOperatorInstruction((BinaryOpInstruction) instruction);
             case NOPER:
                 return buildNOperInstruction((SingleOpInstruction) instruction);
+            case UNARYOPER:
+                return buildUnaryOperatorInstruction((UnaryOpInstruction) instruction);
             default:
                 throw new NotImplementedException(instruction.getInstType());
         }
 
+    }
+
+    private String buildUnaryOperatorInstruction(UnaryOpInstruction instruction) {
+        StringBuilder unaryOpInstruction = new StringBuilder();
+        String labelTrue, labelContinue;
+
+        switch (instruction.getOperation().getOpType()){
+            case NOT: case NOTB:
+                updateStackLimit(1);
+                //System.out.println("IN BINOP NOT " + currentStackValue);
+                currentStackValue = 0;
+
+                labelTrue = "True_" + this.operatorLabel;
+                labelContinue = "Continue_" + this.operatorLabel++;
+
+                unaryOpInstruction.append(pushElement(instruction.getOperand()))
+                        .append("\tifgt ").append(labelTrue)
+                        .append("\n\ticonst_1\n")
+                        .append("\tgoto ").append(labelContinue).append("\n")
+                        .append(labelTrue).append(":\n")
+                        .append("\ticonst_0\n")
+                        .append(labelContinue).append(":\n");
+                break;
+            default:
+                throw new NotImplementedException(instruction.getOperation().getOpType());
+        }
+        return unaryOpInstruction.toString();
     }
 
     private String buildNOperInstruction(SingleOpInstruction instruction) {
@@ -726,9 +755,9 @@ public class Jasmin {
 
         String operandName = ((Operand) element).getName();
 
-        /*if(this.variableTable.get(((Operand) element).getName()) == null
+        if(this.variableTable.get(((Operand) element).getName()) == null
                 && element.getType().getTypeOfElement() == ElementType.BOOLEAN)
-            return (operandName.equals("false") ? "\ticonst_0\n" : "\ticonst_1\n");*/
+            return (operandName.equals("false") ? "\ticonst_0\n" : "\ticonst_1\n");
 
 
         // Array Element
