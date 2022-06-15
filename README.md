@@ -1,8 +1,71 @@
+
+
 # Compilers Project
+
+## **GROUP: 1C**
+
+| NAME              |      NR       |  GRADE | CONTRIBUTION |
+|-------------------|:-------------:|:------:|:------------:|
+| Ana Luísa Marques | 201907565     | 18     | 25%          |
+| José Costa        | 201907216     | 18     | 25%          |
+| Margarida Raposo  | 201906784     | 18     | 25%          |
+| Maria Carneiro    | 201907726     | 18     | 25%          |
+
+
+
+
+GLOBAL Grade of the project: 18
+
+
+
+
+## **SUMMARY**:
+This compiler can generate an AST from a .jmm file after detecting syntatic and semantic errors within it. It cal also generate an .ollir file from a AST and generate a .jasmin file from OLLIR code
+
+
+
+
+## **SEMANTIC ANALYSIS**:
+**Type Verification**
+- Variables must be initialized;
+- Variables must be defined before its usages;
+- Assignments must be between elements of the same type;
+- Array access must only be indexed by int values;
+- An array must only be initialized by int values;
+- Operations must be between elements of the same type;
+- Operations are not allowed between arrays;
+- Arithmetic operations must be between two int (or functions with int return type);
+- Conditional operations must be between two booleans (or functions with boolean return type);
+
+**Method Verification**
+- Methods must only be inboked by objects that exist and contain the method
+- Methods must belong to the current class or its superclass, or being imported (assume that the method is from the superclass when it does not exist in the current class)
+- Methods must be invoked with the correct signature;
+- The parameter types must match the method signature;
+- Methods can be declared before or after other fuction calls it;
+- The invocation of methods that are not from the current class assumes that the method exists and assume the expected types;
+
+
+
+## **CODE GENERATION**:
+Firstly, the source code is read and is transformed into an AST (all entities in the source code are being represented in the AST).The information in the AST is used to create the Symbol Table and perform the Semantic Analysis.  
+The OLLIR code is created by visiting the AST and is inspired by three-address.  
+The OLLIR output is used as input to the backend stage of the compiler, responsible for the selection of JVM insrtuctions, the assignment of the local variables of methods to the local variables of the JVM and the generation of JVM code in the jasmin format.
+
+## **PROS:**
+We have implemented some extra features, such as jasmin optimizations.
+
+
+
+## **CONS:**
+We were not able to implement any other optimization besides the one mentionated.
+
+
+
+## Project setup
 
 For this project, you need to install [Java](https://jdk.java.net/), [Gradle](https://gradle.org/install/), and [Git](https://git-scm.com/downloads/) (and optionally, a [Git GUI client](https://git-scm.com/downloads/guis), such as TortoiseGit or GitHub Desktop). Please check the [compatibility matrix](https://docs.gradle.org/current/userguide/compatibility.html) for Java and Gradle versions.
 
-## Project setup
 
 There are three important subfolders inside the main folder. First, inside the subfolder named ``javacc`` you will find the initial grammar definition. Then, inside the subfolder named ``src`` you will find the entry point of the application. Finally, the subfolder named ``tutorial`` contains code solutions for each step of the tutorial. JavaCC21 will generate code inside the subfolder ``generated``.
 
@@ -40,15 +103,16 @@ We have included the interface ``src-lib/pt/up/fe/comp/jmm/parser/JmmParser.java
 
 To configure the name of the class that implements the JmmParser interface, use the file ``config.properties``.
 
-### Compilation Stages 
+### Compilation Stages
 
 The project is divided in four compilation stages, that you will be developing during the semester. The stages are Parser, Analysis, Optimization and Backend, and for each of these stages there is a corresponding Java interface that you will have to implement (e.g. for the Parser stage, you have to implement the interface JmmParser).
 
 
 ### config.properties
 
-The testing framework, which uses the class TestUtils located in ``src-lib/pt/up/fe/comp``, has methods to test each of the four compilation stages (e.g., ``TestUtils.parse()`` for testing the Parser stage). 
+The testing framework, which uses the class TestUtils located in ``src-lib/pt/up/fe/comp``, has methods to test each of the four compilation stages (e.g., ``TestUtils.parse()`` for testing the Parser stage).
 
 In order for the test class to find your implementations for the stages, it uses the file ``config.properties`` that is in root of your repository. It has four fields, one for each stage (i.e. ``ParserClass``, ``AnalysisClass``, ``OptimizationClass``, ``BackendClass``), and initially it only has one value, ``pt.up.fe.comp.SimpleParser``, associated with the first stage.
 
 During the development of your compiler you will update this file in order to setup the classes that implement each of the compilation stages.
+    
