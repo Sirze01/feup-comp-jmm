@@ -29,7 +29,6 @@ public class SemanticVisitor extends AJmmVisitor<List<Report>, String> {
         addVisit("MemberArgs", this::visitMemberArgs);
         //expressions
         addVisit("ArrayExpression", this::visitArrayExpression);
-        //addVisit("ArrayAssignment", this::visitArrayAssignment);
         addVisit("AccessExpression", this::visitAccessExpression);
         addVisit("CallExpression", this::visitCallExpression);
         addVisit("ParenthesisExpression", this::visitParenthesisExpression);
@@ -66,8 +65,6 @@ public class SemanticVisitor extends AJmmVisitor<List<Report>, String> {
     }
 
     private String visitLiteral(JmmNode node, List<Report> reports){
-        System.out.println(node);
-
         return node.get("type");
     }
 
@@ -206,7 +203,6 @@ public class SemanticVisitor extends AJmmVisitor<List<Report>, String> {
             return s.getType().isArray() ? s.getType().getName() + "ArrayExpression" : s.getType().getName();
         else if (checkExtendsImport(name.get()) != null)
             return name.get();
-
 
         if(node.getAttributes().contains("name") &&
                 symbolTable.getParameter(method.toString(), node.get("name")) != null){
@@ -375,7 +371,7 @@ public class SemanticVisitor extends AJmmVisitor<List<Report>, String> {
                 String idxType = visit(child, reports);
 
                 if (!idxType.equals("int")) {
-                    addSemanticErrorReport(reports, node, "Array indexes must be of type inty.");
+                    addSemanticErrorReport(reports, node, "Array indexes must be of type int.");
                     return "<Invalid>";
                 }
             } else if (!child.equals(node.getJmmChild(0))) {
@@ -434,10 +430,10 @@ public class SemanticVisitor extends AJmmVisitor<List<Report>, String> {
 
                 }
             }
-        } else if (node.getJmmChild(0).getKind().equals("ID")){
+        } else if (child0.getKind().equals("ID")){
             Type childT = getNodeType(node.getJmmChild(0));
             String childType = childT == null ? visit(node.getJmmChild(0), reports) : getNodeType(node.getJmmChild(0)).getName();
-
+            if (childType.equals("") || childType.equals("<Invalid>")) return "<Invalid>";
             JmmMethod method = symbolTable.getParentMethodName(node);
 
             if ((childType.equals(symbolTable.getClassName()) || childType.equals(symbolTable.getSuper())) && symbolTable.getSuper()!=null)
@@ -453,7 +449,7 @@ public class SemanticVisitor extends AJmmVisitor<List<Report>, String> {
             String symbolName = child0.get("name");
             Symbol symbol = symbolTable.getLocalVar(method.toString(), symbolName);
             if (symbol != null) {
-                if (checkExtendsImport(childType) == null && !childType.equals("")) {
+                if (checkExtendsImport(childType) == null) {
                     if (symbolTable.getMethodByName(node.getJmmChild(1).getJmmChild(0).get("name")) == null) {
                         addSemanticErrorReport(reports,
                                 node.getJmmChild(1).getJmmChild(0).get("line") != null ?
@@ -577,16 +573,6 @@ public class SemanticVisitor extends AJmmVisitor<List<Report>, String> {
         if (symbolTable.getSuper() != null && nodeType.equals(symbolTable.getClassName())) return "extends";
         if (nodeType.equals(symbolTable.getSuper())) return "extends";
         return null;
-    }
-
-    private String isClassObject(JmmNode node) {
-        JmmMethod method = symbolTable.getParentMethodName(node);
-        if (method != null && node.getAttributes().contains("name")) {
-            String type = symbolTable.getLocalVar(method.toString(), node.get("name")).getType().getName();
-            if (type.equals(symbolTable.getClassName()))
-                return symbolTable.getSuper()==null? symbolTable.getClassName() : symbolTable.getSuper();
-        }
-        return isThis(node);
     }
 
     private String isThis(JmmNode node){

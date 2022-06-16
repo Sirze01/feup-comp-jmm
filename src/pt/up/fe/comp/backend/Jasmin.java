@@ -236,7 +236,6 @@ public class Jasmin {
         switch (instruction.getOperation().getOpType()){
             case NOT: case NOTB:
                 updateStackLimit(1);
-                //System.out.println("IN BINOP NOT " + currentStackValue);
                 currentStackValue = 0;
 
                 labelTrue = "True_" + this.operatorLabel;
@@ -269,7 +268,6 @@ public class Jasmin {
         switch(instruction.getOperation().getOpType()){
             case ANDB:
                 updateStackLimit(1);
-                //System.out.println("IN BINOP AND " + currentStackValue);
                 currentStackValue = 0;
 
                 binaryOpInstruction.append(pushElement(leftOperand))
@@ -278,7 +276,6 @@ public class Jasmin {
                 break;
             case ORB:
                 updateStackLimit(1);
-                //System.out.println("IN BINOP OR " + currentStackValue);
                 currentStackValue = 0;
 
                 binaryOpInstruction.append(pushElement(leftOperand))
@@ -287,7 +284,6 @@ public class Jasmin {
                 break;
             case NOT: case NOTB:
                 updateStackLimit(1);
-                //System.out.println("IN BINOP NOT " + currentStackValue);
                 currentStackValue = 0;
 
                 labelTrue = "True_" + this.operatorLabel;
@@ -314,7 +310,6 @@ public class Jasmin {
                                    .append("\ticonst_1\n")
                                    .append(labelContinue).append(":\n");
 
-                //System.out.println("IN BINOP EQUAL " + currentStackValue);
                 currentStackValue = 1;
                 break;
             case LTH:
@@ -330,7 +325,6 @@ public class Jasmin {
                         .append("\ticonst_1\n")
                         .append(labelContinue).append(":\n");
 
-                //System.out.println("IN BINOP LTH " + currentStackValue);
                 currentStackValue = 1;
 
                 break;
@@ -347,7 +341,6 @@ public class Jasmin {
                         .append("\ticonst_1\n")
                         .append(labelContinue).append(":\n");
 
-                //System.out.println("IN BIN OP GTE " + currentStackValue);
                 currentStackValue = 1;
                 break;
             case ADD:
@@ -356,7 +349,6 @@ public class Jasmin {
                         .append("\tiadd\n");
 
                 updateStackLimit(currentStackValue);
-                //System.out.println("IN BINOP ADD " + currentStackValue);
                 currentStackValue -= 1;
                 break;
             case MUL:
@@ -365,7 +357,6 @@ public class Jasmin {
                         .append("\timul\n");
 
                 updateStackLimit(currentStackValue);
-                //System.out.println("IN BIN OP MULT " + currentStackValue);
                 currentStackValue -= 1;
                 break;
             case DIV:
@@ -374,7 +365,6 @@ public class Jasmin {
                         .append("\tidiv\n");
 
                 updateStackLimit(currentStackValue);
-                //System.out.println("IN BINOP DIV " + currentStackValue);
                 currentStackValue -= 1;
                 break;
             case SUB:
@@ -383,7 +373,6 @@ public class Jasmin {
                         .append("\tisub\n");
 
                 updateStackLimit(currentStackValue);
-                //System.out.println("IN BINOP SUB " + currentStackValue);
                 currentStackValue -= 1;
                 break;
             default:
@@ -406,7 +395,6 @@ public class Jasmin {
         returnInstruction.append(pushElement(operand)).append("\t").append(returnType).append("return\n");
 
         updateStackLimit(currentStackValue);
-        //System.out.println("IN RETURN " + currentStackValue);
         currentStackValue = 0;
 
         return returnInstruction.toString();
@@ -430,7 +418,6 @@ public class Jasmin {
                            .append(buildTypes(field.getType())).append("\n");
 
         updateStackLimit(currentStackValue);
-        //System.out.println("IN PUT FIELD " + currentStackValue);
         currentStackValue = 0;
 
         return putFieldInstruction.toString();
@@ -453,7 +440,6 @@ public class Jasmin {
                 .append(buildTypes(field.getType())).append("\n");
 
         updateStackLimit(currentStackValue);
-        //System.out.println("IN GET FIELD " + currentStackValue);
         currentStackValue = 0;
 
         return getFieldInstruction.toString();
@@ -472,7 +458,6 @@ public class Jasmin {
 
         if(isNoper || condition.getOperation().getOpType() == OperationType.ANDB){
             updateStackLimit(1);
-            //System.out.println("IN BRANCH AND " + currentStackValue);
             currentStackValue = 0;
 
             String labelComparison = "Condition_" + this.comparisonLabel++;
@@ -491,7 +476,6 @@ public class Jasmin {
 
         if(condition.getOperation().getOpType() == OperationType.ORB){
             updateStackLimit(1);
-            //System.out.println("IN BRANCH OR " + currentStackValue);
             currentStackValue = 0;
 
             String labelComparison = "Condition_" + this.comparisonLabel++;
@@ -532,7 +516,6 @@ public class Jasmin {
                 .append("\n");
 
         updateStackLimit(currentStackValue);
-        //System.out.println("IN BRANCH NORMAL " + currentStackValue);
         currentStackValue = 0;
 
         return condBranchInstruction.toString();
@@ -605,7 +588,6 @@ public class Jasmin {
                 assignInstruction.append(buildMethodInstructions(instruction.getRhs()))
                         .append("\tiastore\n");
                 updateStackLimit(currentStackValue + 1); // NOT SURE
-                //System.out.println("IN ARRAY ASSIGNMENT " + currentStackValue);
                 currentStackValue = 0;
                 return assignInstruction.toString();
             }
@@ -621,7 +603,6 @@ public class Jasmin {
                 .append("\n");
 
         updateStackLimit(currentStackValue);
-        //System.out.println("IN ASSIGNMENT " + currentStackValue);
         currentStackValue = 0;
         return assignInstruction.toString();
     }
@@ -637,7 +618,6 @@ public class Jasmin {
                     callInstruction.append(pushElement(operand));
 
                 updateStackLimit(currentStackValue + 1);
-                //System.out.println("IN INVOKE VIRTUAL CALL " + currentStackValue);
                 currentStackValue =  (instruction.getReturnType().getTypeOfElement() == ElementType.VOID) ? 0 : 1;
 
                 callInstruction.append("\tinvokevirtual ");
@@ -675,7 +655,6 @@ public class Jasmin {
                         .append(buildTypes(instruction.getReturnType()))
                         .append("\n");
 
-                //System.out.println("IN INVOKE SPECIAL CALL " + currentStackValue);
                 currentStackValue = 0;
                 break;
             case invokestatic:
@@ -701,7 +680,6 @@ public class Jasmin {
                         .append(buildTypes(instruction.getReturnType()))
                         .append("\n");
 
-                //System.out.println("IN INVOKE STATIC CALL " + currentStackValue);
                 currentStackValue =  (instruction.getReturnType().getTypeOfElement() == ElementType.VOID) ? 0 : 1;
                 break;
             case NEW:
@@ -731,7 +709,6 @@ public class Jasmin {
                 // Other new types are not supported
 
                 updateStackLimit(currentStackValue);
-                //System.out.println("IN NEW CALL " + currentStackValue);
                 currentStackValue = 1;
                 break;
             case arraylength:
@@ -778,7 +755,6 @@ public class Jasmin {
     }
 
     private String pushElementDescriptor(Descriptor descriptor) {
-        //System.out.println("IN PUSH ELEMENT DESCRIPTOR " + currentStackValue);
         currentStackValue += 1;
 
         ElementType type = descriptor.getVarType().getTypeOfElement();
@@ -792,7 +768,6 @@ public class Jasmin {
     }
 
     private String pushLiteral(LiteralElement element) {
-        //System.out.println("IN PUSH LITERAL " + currentStackValue);
         currentStackValue += 1;
 
         StringBuilder literalElement = new StringBuilder("\t");
