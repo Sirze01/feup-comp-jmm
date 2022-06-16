@@ -1,27 +1,10 @@
-import ioPlus;
-class ComplexArrayAccess {
+class LocalLimits{
 
-    public int func(int a) {
-        return a;
+    public int func(int a, int b){
+       int j;
+
+       a = b + 10 * (3 + this.func(3,4));
+       j = this.func(3,4);
+       return 1;
     }
-
-	public static void main(String[] args) {
-	    int[] a;
-        int i;
-        ComplexArrayAccess d;
-        d = new ComplexArrayAccess();
-        a = new int[5];
-        a[0] = 1;
-		a[1] = 2;
-		a[2] = 3;
-		a[3] = 4;
-		a[4] = 5;
-        i = 1;
-        ioPlus.printResult(a[d.func(0)]);
-        ioPlus.printResult(a[i]);
-        ioPlus.printResult(a[4/2]);
-        ioPlus.printResult(a[a[2]]);
-        ioPlus.printResult(a[a.length -1 ]);
-
-	}
 }

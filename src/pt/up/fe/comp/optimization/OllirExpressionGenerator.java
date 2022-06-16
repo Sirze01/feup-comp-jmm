@@ -144,12 +144,36 @@ public class OllirExpressionGenerator extends AJmmVisitor<Boolean, String> {
                 .getLocalVar(methodSignature, assignmentNode.getJmmChild(0).get("name"));
 
         if (s == null) {
-            s = symbolTable.getFields().stream().filter(field -> field.getName()
-                    .equals(assignmentNode.getJmmChild(0).get("name"))).collect(Collectors.toList()).get(0);
+            s = findSymbol(assignmentNode.getJmmChild(0));
+
+            List<Symbol> a = symbolTable.getFields().stream().filter(field -> field.getName()
+                    .equals(assignmentNode.getJmmChild(0).get("name"))).collect(Collectors.toList());
 
             assignmentStmt.append(" ".repeat(getNumSpaces(indent)));
-            assignmentStmt.append("putfield(this, " + OllirGeneratorUtils.getCode(s) + ", " +
-                    visit(assignmentNode.getJmmChild(1)) + ").V;\n");
+
+            String tmp = null;
+            if(assignmentNode.getJmmChild(1).getKind().equals("BinOp") ||
+                    assignmentNode.getJmmChild(1).getKind().equals("AccessExpression") ||
+                    assignmentNode.getJmmChild(1).getKind().equals("CallExpression")){
+                String op = visit(assignmentNode.getJmmChild(1), dummy);
+                String type = op.substring(op.lastIndexOf(".") + 1);
+                tmp = generateTmp(type);
+
+                code.append(" ".repeat(getNumSpaces(indent)));
+                code.append(tmp + " :=." + type + " " + op + ";\n");
+            }
+            else{
+                tmp = visit(assignmentNode.getJmmChild(1));
+            }
+
+
+            if(a.isEmpty()){
+                String v = visit(assignmentNode.getJmmChild(0), dummy);
+                assignmentStmt.append(v + " :=." +v.substring(v.lastIndexOf(".") + 1) +" " + tmp + ";\n");
+            }else{
+                assignmentStmt.append("putfield(this, " + OllirGeneratorUtils.getCode(s) + ", " +
+                        tmp + ").V;\n");
+            }
 
             return assignmentStmt.toString();
         }
@@ -498,7 +522,12 @@ public class OllirExpressionGenerator extends AJmmVisitor<Boolean, String> {
 
 
     private String parenthesisVisit(JmmNode parenthesisNode, Boolean dummy) {
-        return visit(parenthesisNode.getJmmChild(0));
+        String op = visit(parenthesisNode.getJmmChild(0));
+        String type = op.substring(op.lastIndexOf(".") + 1);
+        String tmp = generateTmp(type);
+        code.append(" ".repeat(getNumSpaces(indent)));
+        code.append(tmp + ":=." + type + " " + op + ";\n");
+        return tmp;
     }
 
     private String scopeStatementVisit(JmmNode scopeNode, Boolean dummy) {
